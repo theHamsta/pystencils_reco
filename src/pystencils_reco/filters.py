@@ -123,7 +123,7 @@ def generic_guided_filter(input_field: pystencils.Field,
                           stencil,
                           weighting_function,
                           normalize_weights=True):
-    """Implements a generic instationary filter. The filter weight depends on the current stencil offset, the function value there and the central function value
+    """Implements a generic non-stationary filter. The filter weight depends on the current stencil offset, the function value there and the central function value
 
     :param input_field: 
     :type input_field: pystencils.Field
