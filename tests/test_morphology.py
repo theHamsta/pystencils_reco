@@ -53,11 +53,13 @@ def test_visualize_morphology():
     pyconrad.imshow(tmp, 'dilated')
     pyconrad.imshow(test_image-tmp, 'diff_dilation')
 
-    pyconrad.imshow(test_image, 'original_opened')
+    original = np.copy(test_image)
     erosion(x=test_image, y=tmp)
     dilation(x=tmp, y=test_image)
-    pyconrad.imshow(tmp, 'opened')
-    pyconrad.imshow(test_image-tmp, 'diff_dilation')
+
+    pyconrad.imshow(original, 'original_opened')
+    pyconrad.imshow(test_image, 'opened')
+    pyconrad.imshow(test_image-original, 'diff_opening')
 
     # for i in tqdm.trange(20):
     # erosion(x=test_image, y=tmp)
