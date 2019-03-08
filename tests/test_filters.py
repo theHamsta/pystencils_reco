@@ -54,6 +54,20 @@ def test_mean_filter_evaluation():
 
 
 @pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip GPU tests on CI")
+def test_visualize_mean_filter():
+    x, y = pystencils.fields('x,y: float32[2d]')
+    x_array = np.random.rand(20, 23).astype(np.float32)
+    y_array = np.random.rand(20, 23).astype(np.float32)
+
+    kernel = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2)).compile()
+    kernel(x=x_array, y=y_array)
+
+    import pyconrad.autoinit
+    pyconrad.imshow(x_array, 'x')
+    pyconrad.imshow(y_array, 'y')
+
+
+@pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip GPU tests on CI")
 def test_mean_filter_evaluation_gpu():
     from pycuda.gpuarray import to_gpu
     x, y = pystencils.fields('x,y: float32[2d]')
@@ -115,6 +129,7 @@ def main():
     test_mean_filter()
     test_mean_filter_evaluation()
     test_mean_filter_evaluation_gpu()
+    test_visualize_mean_filter()
 
     test_gauss_filter()
     test_gauss_filter_evaluation()
