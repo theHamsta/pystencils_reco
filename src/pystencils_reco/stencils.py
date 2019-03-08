@@ -9,6 +9,7 @@ Implements common stencil types, like :func: ~pystencils_reco.stencils.BoxStenci
 and :func: ~pystencils_reco.stencils.BallStencil
 """
 import itertools
+import math
 from typing import Union
 
 import pampy
@@ -60,8 +61,16 @@ class BoxStencil(Stencil):
         super(BoxStencil, self).__init__(stencil, ndim)
 
 
-class SpereStencil(Stencil):
-    """SpereStencil"""
+class BallStencil(Stencil):
+    """BallStencil"""
 
     def __init__(self, radius, ndim=3):
-        super(BallStencil, self).__init__(range(radius), ndim)
+
+        stencil = []
+        circumscribing_box = BoxStencil(2*radius+1, ndim)
+        for s in circumscribing_box:
+            norm = math.sqrt(sum(i*i for i in s))
+            if norm <= radius:
+                stencil.append(s)
+
+        super(BallStencil, self).__init__(stencil, ndim)
