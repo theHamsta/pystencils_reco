@@ -62,7 +62,10 @@ class BoxStencil(Stencil):
 
 
 class BallStencil(Stencil):
-    """BallStencil"""
+    """
+    A spherical stencil that includes all relative accesses with
+    distance smaller than a given radius to the stencil center
+    """
 
     def __init__(self, radius, ndim=3):
         self.radius = radius
