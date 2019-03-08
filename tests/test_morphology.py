@@ -24,6 +24,7 @@ def test_morphology():
     x, y = pystencils.fields('x,y: uint8[2d]')
     x_array = np.random.rand(20, 23, 25).astype(np.uint8)
     y_array = np.random.rand(20, 23, 25).astype(np.uint8)
+    # TODO
 
 
 @pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip visualization tests on CI")
