@@ -67,7 +67,7 @@ class BallStencil(Stencil):
     distance smaller than a given radius to the stencil center
     """
 
-    def __init__(self, radius, ndim=3):
+    def __init__(self, radius, ndim=3, with_center=True):
         self.radius = radius
 
         stencil = []
@@ -76,5 +76,8 @@ class BallStencil(Stencil):
             norm = math.sqrt(sum(i*i for i in s))
             if norm <= radius:
                 stencil.append(s)
+
+        if not with_center:
+            stencil.remove(tuple([0]*ndim))
 
         super(BallStencil, self).__init__(stencil, ndim)
