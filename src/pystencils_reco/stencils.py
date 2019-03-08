@@ -65,6 +65,7 @@ class BallStencil(Stencil):
     """BallStencil"""
 
     def __init__(self, radius, ndim=3):
+        self.radius = radius
 
         stencil = []
         circumscribing_box = BoxStencil(2*radius+1, ndim)
