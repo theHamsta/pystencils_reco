@@ -44,6 +44,7 @@ def bilateral_filter(input_field: pystencils.Field,
 
 
 def guided_bilateral_filter(input_field: pystencils.Field,
+                            guide_field: pystencils.Field,
                             output_field: pystencils.Field,
                             stencil,
                             distance_sigma,
@@ -54,7 +55,7 @@ def guided_bilateral_filter(input_field: pystencils.Field,
         value_weight = pystencils_reco.functions.gaussian((guided_offset_value-central_value,), value_sigma)
         return value_weight * distance_weight
 
-    return generic_guided_filter(input_field, output_field, stencil, weighting_function)
+    return generic_guided_filter(input_field, guide_field, output_field, stencil, weighting_function)
 
 
 def generic_stationary_filter(input_field: pystencils.Field,
@@ -64,7 +65,7 @@ def generic_stationary_filter(input_field: pystencils.Field,
                               normalize_weights=True):
     """generic_function_filter
 
-    :param input_field: 
+    :param input_field:
     :type input_field: pystencils.Field
     :param output_field:
     :type output_field: pystencils.Field
@@ -92,9 +93,10 @@ def generic_instationary_filter(input_field: pystencils.Field,
                                 stencil,
                                 weighting_function,
                                 normalize_weights=True):
-    """Implements a generic instationary filter. The filter weight depends on the current stencil offset, the function value there and the central function value
+    """Implements a generic instationary filter.
+    The filter weight depends on the current stencil offset, the function value there and the central function value at stencil center.
 
-    :param input_field: 
+    :param input_field:
     :type input_field: pystencils.Field
     :param output_field:
     :type output_field: pystencils.Field
@@ -127,10 +129,16 @@ def generic_guided_filter(input_field: pystencils.Field,
 
     :param input_field: 
     :type input_field: pystencils.Field
+    :param guide_field:
+    :type guide_field: pystencils.Field
     :param output_field:
     :type output_field: pystencils.Field
-    :param stencil:
-    :param weighting_function: A function that takes current offset, offset function value and stencils center function value
+    :param stencil:   Describes filter kernel, an Iterable over all accessed relative offsets
+    :param weighting_function:
+                       A function that takes current offset,
+                       the value of the filter image at that offset,
+                       the value of the guide filter at that offset,
+                       and the value of the filter image at the stencils center
     :param normalize_weights: whether or not to normalize weights to a sum of one
     """
 
