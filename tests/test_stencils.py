@@ -5,7 +5,16 @@
 """
 
 """
-from pystencils_reco.stencils import BallStencil, BoxStencil
+from pystencils_reco.stencils import BallStencil, BoxStencil, LineStencil
+
+
+def test_LineStencil():
+    for with_center in (True, False):
+        for ndim in range(1, 4):
+            for filter_dimension in range(ndim):
+                for kernel_size in range(1, 6):
+                    stencil = LineStencil(kernel_size, filter_dimension, ndim, with_center=with_center)
+                    print(stencil)
 
 
 def test_BoxStencil():
@@ -30,6 +39,7 @@ def test_BoxStencil_non_quadratic():
 
 
 def main():
+    test_LineStencil()
     test_BoxStencil()
     test_BallStencil()
     test_BoxStencil_non_quadratic()

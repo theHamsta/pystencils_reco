@@ -26,15 +26,21 @@ class Stencil(list):
         self.ndim = ndim
 
         if not with_center:
-            self.remove(tuple([0]*ndim))
+            try:
+                self.remove(tuple([0]*ndim))
+            except ValueError:
+                pass
 
 
 class LineStencil(Stencil):
     """Stencil along one dimension. Results in a 1D filter"""
 
     def __init__(self, kernel_size: int, filter_dimension, ndim=3, with_center=True):
-        stencil = [0] * ndim
-        stencil[filter_dimension] = range(-(kernel_size//2), kernel_size//2 + 1)
+        stencil = []
+        for offset in range(-(kernel_size//2), -(kernel_size//2) + kernel_size):
+            stencils_element = [0] * ndim
+            stencils_element[filter_dimension] = offset
+            stencil.append(tuple(stencils_element))
 
         super(LineStencil, self).__init__(stencil, ndim, with_center)
 
@@ -45,16 +51,15 @@ class BoxStencil(Stencil):
     def __init__(self, kernel_size: Union[int, tuple], ndim=3, with_center=True):
         stencil = pampy.match(kernel_size,
                               int, lambda _: itertools.product(
-                                  range(-(kernel_size//2), kernel_size//2 + 1), repeat=ndim),
+                                  range(-(kernel_size//2), -(kernel_size//2)+kernel_size), repeat=ndim),
                               pampy.ANY, lambda _: itertools.product(
-                                  *[range(-(i//2), i//2 + 1) for i in kernel_size])
+                                  *[range(-(i//2), i//2 + i) for i in kernel_size])
                               )
 
         if isinstance(kernel_size, int):
             kernel_size = [kernel_size] * ndim
         else:
             ndim = len(kernel_size)
-        assert (i % 2 == 1 for i in kernel_size), "kernel_size must consist of uneven numbers"
 
         super(BoxStencil, self).__init__(stencil, ndim, with_center)
 
