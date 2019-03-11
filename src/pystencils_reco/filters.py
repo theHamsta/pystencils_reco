@@ -13,10 +13,11 @@ import functools
 import pystencils
 import pystencils.simp
 import pystencils_reco.functions
+from pystencils_reco._assignment_collection import AssignmentCollection
 
 
 def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil):
-    assignments = pystencils.AssignmentCollection({
+    assignments = AssignmentCollection({
         output_field.center(): sum(input_field[t] for t in stencil) / len(stencil)
     }, {})
 
@@ -81,7 +82,7 @@ def generic_stationary_filter(input_field: pystencils.Field,
         weights += weight
         sum += weight * input_field[s]
 
-    assignments = pystencils.AssignmentCollection({
+    assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
     }, {})
 
@@ -112,7 +113,7 @@ def generic_instationary_filter(input_field: pystencils.Field,
         weights += weight
         sum += weight * input_field[s]
 
-    assignments = pystencils.AssignmentCollection({
+    assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
     }, {})
 
@@ -149,7 +150,7 @@ def generic_guided_filter(input_field: pystencils.Field,
         weights += weight
         sum += weight * input_field[s]
 
-    assignments = pystencils.AssignmentCollection({
+    assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
     }, {})
 

@@ -10,6 +10,7 @@ Implements morphological operations
 import sympy
 
 import pystencils
+from pystencils_reco._assignment_collection import AssignmentCollection
 
 
 def binary_erosion(input_field, output_field, stencil):
@@ -35,7 +36,7 @@ def _morphological(input_field, output_field, stencil, is_erosion):
     else:
         central_pixel = sympy.Piecewise((0, sum >= len(stencil)),  (1, True))
 
-    assignments = pystencils.AssignmentCollection({
+    assignments = AssignmentCollection({
         output_field.center(): central_pixel
     }, {})
 
