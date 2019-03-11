@@ -21,7 +21,7 @@ class Stencil(list):
     """Implements an Iterable of relative accesses on a Field"""
 
     def __init__(self, iterable, ndim, with_center=True):
-        assert (len(i) == ndim for i in iterable), "All elements of a Stencils should have len == ndim"
+        assert (len(i) == ndim for i in iterable), "All elements of a Stencil should have len == ndim"
         super(Stencil, self).__init__(list(iterable))
         self.ndim = ndim
 
