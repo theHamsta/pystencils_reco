@@ -12,6 +12,7 @@ import pystencils.assignment_collection
 import pystencils.autodiff
 
 
+# TODO: find good name to differentiate from conventional pystencils.AssignmentCollection... Perhaps ImageFilter?
 class AssignmentCollection(pystencils.AssignmentCollection):
     """
     A high-level wrapper around pystencils.AssignmentCollection that provides some convenience methods
