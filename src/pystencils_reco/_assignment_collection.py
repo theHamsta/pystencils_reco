@@ -18,9 +18,8 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     for simpler usage in the field of image/volume processing
     """
 
-    def __init__(self, arg):
-        super(AssignmentCollection, self).__init__()
-        self.arg = arg
+    def __init__(self, assignments, sub_expressions={}, *args, **kwargs):
+        super(AssignmentCollection, self).__init__(assignments, sub_expressions, *args, **kwargs)
         self._autodiff = None
 
     def compile(self, target='cpu', *args, **kwargs):
@@ -31,9 +30,17 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         cse = pystencils.simp.sympy_cse(self)
         return pystencils.create_kernel(cse, target, *args, **kwargs).compile()
 
+    def backward(self):
+        if not self._autodiff:
+            self._create_autodiff()
+        return self._autodiff.backward_assignments
+
     def create_pytorch_op(self, **field_name_kwargs):
         if not self._autodiff:
-            self._autodiff = pystencils.autodiff.AutoDiffOp(self, operation_name="", diff_mode='transposed-forward')
+            self._create_autodiff()
         input_field_to_tensor_map = {f: field_name_kwargs[f.name] for f in self._autodiff.forward_fields}
 
         return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch')
+
+    def _create_autodiff(self):
+        self._autodiff = pystencils.autodiff.AutoDiffOp(self, operation_name="", diff_mode='transposed-forward')

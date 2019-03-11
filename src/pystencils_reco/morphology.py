@@ -38,6 +38,6 @@ def _morphological(input_field, output_field, stencil, is_erosion):
 
     assignments = AssignmentCollection({
         output_field.center(): central_pixel
-    }, {})
+    })
 
     return assignments

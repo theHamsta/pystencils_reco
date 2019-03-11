@@ -19,7 +19,7 @@ from pystencils_reco._assignment_collection import AssignmentCollection
 def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil):
     assignments = AssignmentCollection({
         output_field.center(): sum(input_field[t] for t in stencil) / len(stencil)
-    }, {})
+    })
 
     return pystencils.simp.sympy_cse(assignments)
 
@@ -115,7 +115,7 @@ def generic_instationary_filter(input_field: pystencils.Field,
 
     assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
-    }, {})
+    })
 
     return pystencils.simp.sympy_cse(assignments)
 
@@ -152,6 +152,6 @@ def generic_guided_filter(input_field: pystencils.Field,
 
     assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
-    }, {})
+    })
 
     return pystencils.simp.sympy_cse(assignments)
