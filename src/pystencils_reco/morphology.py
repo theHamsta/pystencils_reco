@@ -9,7 +9,6 @@ Implements morphological operations
 """
 import sympy
 
-import pystencils
 from pystencils_reco._assignment_collection import AssignmentCollection
 
 
