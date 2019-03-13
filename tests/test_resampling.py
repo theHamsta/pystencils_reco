@@ -31,9 +31,28 @@ def test_rotation():
                 print(transform)
 
 
+def test_scaling_compilation():
+
+    for ndim in range(1, 4):
+        for scale in (0.5, [(s+1)*0.1 for s in range(ndim)]):
+            x, y = pystencils.fields('x,y: float32[%id]' % ndim)
+            scale_transform(x, y, scale).compile('gpu')
+
+
+def test_rotation_compilation():
+
+    for ndim in (2, 3):
+        for angle in (0.4, -0.8):
+            for axis in range(3):
+                x, y = pystencils.fields('x,y: float32[%id]' % ndim)
+                rotation_transform(x, y, angle, axis).compile('gpu')
+
+
 def main():
     test_scaling()
     test_rotation()
+    test_scaling_compilation()
+    test_rotation_compilation()
 
 
 if __name__ == '__main__':
