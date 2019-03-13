@@ -11,7 +11,6 @@ Implements common resampling operations like rotations and scalings
 from collections.abc import Iterable
 
 import sympy
-import sympy.matrices.dense
 
 import pystencils
 from pystencils_reco import AssignmentCollection
@@ -19,9 +18,10 @@ from pystencils_reco import AssignmentCollection
 
 def generic_spatial_matrix_transform(input_field, output_field, transform_matrix):
     texture = pystencils.astnodes.TextureCachedField(input_field)
+    ndim = input_field.spatial_dimensions
 
     assignments = AssignmentCollection({
-        output_field.center(): texture.at(transform_matrix.inv() @ pystencils.x_staggered_vector)
+        output_field.center(): texture.at(transform_matrix.inv() @ pystencils.x_staggered_vector(ndim))
     })
     assignments.transform_matrix = transform_matrix
 
@@ -36,10 +36,10 @@ def scale_transform(input_field, output_field, scaling_factor):
     :param scaling_factor: Number, sympy.Symbol or list describing the scaling in along each dimension
     """
 
-    if isinstance(scale_transform, Iterable):
-        transform_matrix = sympy.matrices.diag(scaling_factor)
+    if isinstance(scaling_factor, Iterable):
+        transform_matrix = sympy.diag(*scaling_factor)
     else:
-        transform_matrix = sympy.matrices.diag([scaling_factor] * input_field.spatial_dimensions)
+        transform_matrix = sympy.diag(*list([scaling_factor] * input_field.spatial_dimensions))
 
     return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
 
@@ -47,12 +47,10 @@ def scale_transform(input_field, output_field, scaling_factor):
 def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=None):
     if input_field.spatial_dimensions == 3:
         assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
-        get_rotation_matrix = getattr(sympy.matrices.dense, 'rot_axis%i' % rotation_axis)
+        transform_matrix = getattr(sympy, 'rot_axis%i' % (rotation_axis+1))(rotation_angle)
     elif input_field.spatial_dimensions == 2:
-        get_rotation_matrix = sympy.matrices.dense.rot_axis1
+        transform_matrix = sympy.rot_axis1(rotation_angle)[:2, :2]
     else:
         raise NotImplementedError('Rotations only implemented for 2d and 3d')
-
-    transform_matrix = get_rotation_matrix(rotation_angle)
 
     return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
