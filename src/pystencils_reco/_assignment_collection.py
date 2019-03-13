@@ -19,8 +19,10 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     for simpler usage in the field of image/volume processing
     """
 
-    def __init__(self, assignments, sub_expressions={}, *args, **kwargs):
-        super(AssignmentCollection, self).__init__(assignments, sub_expressions, *args, **kwargs)
+    def __init__(self, assignments, perform_cse=True, *args, **kwargs):
+        if perform_cse:
+            assignments = pystencils.simp.sympy_cse_on_assignment_list(assignments)
+        super(AssignmentCollection, self).__init__(assignments, {}, *args, **kwargs)
         self._autodiff = None
 
     def compile(self, target='cpu', *args, **kwargs):
@@ -28,8 +30,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         See :func: ~pystencils.create_kernel
         """
 
-        cse = pystencils.simp.sympy_cse(self)
-        return pystencils.create_kernel(cse, target, *args, **kwargs).compile()
+        return pystencils.create_kernel(self, target, *args, **kwargs).compile()
 
     def backward(self):
         if not self._autodiff:
