@@ -44,8 +44,9 @@ def scale_transform(input_field, output_field, scaling_factor):
     return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
 
 
-def rotation_transform(input_field, output_field, rotation_axis, rotation_angle):
+def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=None):
     if input_field.spatial_dimensions == 3:
+        assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
         get_rotation_matrix = getattr(sympy.matrices.dense, 'rot_axis%i' % rotation_axis)
     elif input_field.spatial_dimensions == 2:
         get_rotation_matrix = sympy.matrices.dense.rot_axis1
@@ -55,4 +56,3 @@ def rotation_transform(input_field, output_field, rotation_axis, rotation_angle)
     transform_matrix = get_rotation_matrix(rotation_angle)
 
     return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
-
