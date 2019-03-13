@@ -10,6 +10,7 @@
 
 import itertools
 
+import diofant
 import sympy
 # Would be way cooler if sympy.geometry supported Polygons in 3D 😞
 # Let's use this SymPy fork then
@@ -38,15 +39,16 @@ def get_field_box_boundary(field):
     """
 
     spatial_shape = field.spatial_shape
-    corner_points = itertools.product(*[(0, s-1) for s in spatial_shape])
+    corner_points = list(itertools.product(*[(0, s-1) for s in diofant.symbols('x,y,z')]))
 
     polygons = []
-    for i in field.spatial_dimensions:
+    for i in range(field.spatial_dimensions):
         polygons.append(Polygon(p for p in corner_points if p[i] == 0))
         polygons.append(Polygon(p for p in corner_points if p[i] == spatial_shape[i]-1))
 
-    for i, p in enumerate(polygons):
-        polygons[i] = [field.coordinate_origin + field.coordinate_transform @ sympy.Matrix(point) for point in p.args]
+    # for i, p in enumerate(polygons):
+        # polygons[i] = Polygon(Point(field.coordinate_origin + field.coordinate_transform @
+        # sympy.Matrix(point)) for point in p.args)
 
     return polygons
 

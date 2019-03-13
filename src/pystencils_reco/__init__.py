@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from pkg_resources import get_distribution, DistributionNotFound
+from pkg_resources import DistributionNotFound, get_distribution
+
+from pystencils_reco._assignment_collection import AssignmentCollection
 
 try:
     # Change here if project is renamed and does not equal the package name

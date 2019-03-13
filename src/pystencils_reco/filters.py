@@ -21,7 +21,7 @@ def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, s
         output_field.center(): sum(input_field[t] for t in stencil) / len(stencil)
     })
 
-    return pystencils.simp.sympy_cse(assignments)
+    return assignments
 
 
 def gauss_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil, sigma):
@@ -86,7 +86,7 @@ def generic_stationary_filter(input_field: pystencils.Field,
         output_field.center(): sum / weights if normalize_weights else sum
     }, {})
 
-    return pystencils.simp.sympy_cse(assignments)
+    return assignments
 
 
 def generic_instationary_filter(input_field: pystencils.Field,
@@ -95,14 +95,17 @@ def generic_instationary_filter(input_field: pystencils.Field,
                                 weighting_function,
                                 normalize_weights=True):
     """Implements a generic instationary filter.
-    The filter weight depends on the current stencil offset, the function value there and the central function value at stencil center.
+
+    The filter weight depends on the current stencil offset, the function value there and
+    the central function value at stencil center.
 
     :param input_field:
     :type input_field: pystencils.Field
     :param output_field:
     :type output_field: pystencils.Field
     :param stencil:
-    :param weighting_function: A function that takes current offset, offset function value and stencils center function value
+    :param weighting_function: A function that takes current offset, offset function value and
+                               stencils center function value
     :param normalize_weights: whether or not to normalize weights to a sum of one
     """
 
@@ -117,7 +120,7 @@ def generic_instationary_filter(input_field: pystencils.Field,
         output_field.center(): sum / weights if normalize_weights else sum
     })
 
-    return pystencils.simp.sympy_cse(assignments)
+    return assignments
 
 
 def generic_guided_filter(input_field: pystencils.Field,
@@ -126,7 +129,9 @@ def generic_guided_filter(input_field: pystencils.Field,
                           stencil,
                           weighting_function,
                           normalize_weights=True):
-    """Implements a generic non-stationary filter. The filter weight depends on the current stencil offset, the function value there and the central function value
+    """Implements a generic non-stationary filter.
+
+    The filter weight depends on the current stencil offset, the function value there and the central function value
 
     :param input_field: 
     :type input_field: pystencils.Field
@@ -154,4 +159,4 @@ def generic_guided_filter(input_field: pystencils.Field,
         output_field.center(): sum / weights if normalize_weights else sum
     })
 
-    return pystencils.simp.sympy_cse(assignments)
+    return assignments

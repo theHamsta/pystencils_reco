@@ -21,7 +21,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
     def __init__(self, assignments, perform_cse=True, *args, **kwargs):
         if perform_cse:
-            assignments = pystencils.simp.sympy_cse_on_assignment_list(assignments)
+            assignments = pystencils.simp.sympy_cse(pystencils.AssignmentCollection(assignments, {})).all_assignments
         super(AssignmentCollection, self).__init__(assignments, {}, *args, **kwargs)
         self._autodiff = None
 
