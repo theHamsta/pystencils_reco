@@ -73,5 +73,5 @@ def resample(input_field, output_field):
     """
 
     return generic_spatial_matrix_transform(input_field,
- output_field,
- sympy.Matrix(sympy.Identity(input_field.spatial_dimensions)))
+                                            output_field,
+                                            sympy.Matrix(sympy.Identity(input_field.spatial_dimensions)))
