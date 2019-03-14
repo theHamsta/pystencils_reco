@@ -8,10 +8,7 @@
 Implements a generic forward and backprojection projections
 """
 
-# import diofant.geometry
 import sympy
-# from diofant.geometry import Line, Point, Po
-from diofant.solvers.inequalities import reduce_inequalities
 
 import pystencils.astnodes
 import pystencils_reco._geometry
@@ -41,13 +38,15 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         intersection_candidates.append(sympy.solve(
             ray_equations[s]-input_volume_field.spatial_shape[i], [t], rational=False)[0])
 
-    itersection_point1 = sympy.Piecewise(
+    intersection_point1 = sympy.Piecewise(
         *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (0, True))
-    itersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
-                                           for f in reversed(intersection_candidates)], (0, True))
+    intersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
+                                            for f in reversed(intersection_candidates)], (0, True))
 
-    min_t = sympy.Piecewise((itersection_point1, itersection_point1 < itersection_point2), (itersection_point2, True))
-    max_t = sympy.Piecewise((itersection_point1, itersection_point1 > itersection_point2), (itersection_point2, True))
+    min_t = sympy.Piecewise((intersection_point1, intersection_point1 < intersection_point2),
+                            (intersection_point2, True))
+    max_t = sympy.Piecewise((intersection_point1, intersection_point1 > intersection_point2),
+                            (intersection_point2, True))
     # num_steps = sympy.ceiling(max_t-min_t) / step_size
 
     line_integral, i, num_steps, min_t_tmp, max_t_tmp, intensity_weighting = sympy.symbols(
