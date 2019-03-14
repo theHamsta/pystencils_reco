@@ -133,7 +133,7 @@ def generic_guided_filter(input_field: pystencils.Field,
 
     The filter weight depends on the current stencil offset, the function value there and the central function value
 
-    :param input_field: 
+    :param input_field:
     :type input_field: pystencils.Field
     :param guide_field:
     :type guide_field: pystencils.Field
