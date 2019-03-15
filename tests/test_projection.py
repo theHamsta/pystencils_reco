@@ -34,6 +34,7 @@ def test_projection():
     # print(kernel.code)
 
     a = sympy.symbols('a:12')
+    a = [pystencils.TypedSymbol(s.name, 'float32') for s in a]
     A = sympy.Matrix(3, 4, lambda i, j: a[i*4+j])
     # A = sympy.MatrixSymbol('A', 3, 4)
     projection_matrix = A

@@ -72,16 +72,16 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     # ray_segment = volume_box.interection(projection_ray)
     # print(ray_segment)
 
-    u = pystencils.x_staggered
-    v = pystencils.y_staggered
-
     # step_size *= projection_vector_norm
 
     assignments = pystencils_reco.AssignmentCollection({
-        min_t_tmp: min_t,
-        max_t_tmp: max_t,
+        min_t_tmp: min_t.subs({u: pystencils.x_staggered, v:pystencils.y_staggered}),
+        max_t_tmp: max_t.subs({u: pystencils.x_staggered, v:pystencils.y_staggered}),
         num_steps: sympy.ceiling(max_t_tmp-min_t_tmp / step_size),
-        line_integral: sympy.Sum(volume_texture.at([ray_equations[s].subs({t: min_t_tmp + i * step_size}) for s in (x, y, z)]), (i, 0, num_steps)),
+        line_integral: sympy.Sum(volume_texture.at(
+            [ray_equations[s].subs({t: min_t_tmp + i * step_size, u: pystencils.x_staggered, v:pystencils.y_staggered}) for s in (x, y, z)]),
+            (i, 0, num_steps)),
+
         # intensity_weighting: sympy.dot(projection_vector#,
         output_projections_field.center(): (line_integral * step_size)
     })
