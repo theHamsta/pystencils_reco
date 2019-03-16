@@ -75,15 +75,24 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     # step_size *= projection_vector_norm
 
     assignments = pystencils_reco.AssignmentCollection({
-        min_t_tmp: min_t.subs({u: pystencils.x_staggered, v:pystencils.y_staggered}),
-        max_t_tmp: max_t.subs({u: pystencils.x_staggered, v:pystencils.y_staggered}),
+        min_t_tmp: min_t.subs({u: pystencils.x_staggered, v: pystencils.y_staggered}),
+        max_t_tmp: max_t.subs({u: pystencils.x_staggered, v: pystencils.y_staggered}),
         num_steps: sympy.ceiling(max_t_tmp-min_t_tmp / step_size),
         line_integral: sympy.Sum(volume_texture.at(
-            [ray_equations[s].subs({t: min_t_tmp + i * step_size, u: pystencils.x_staggered, v:pystencils.y_staggered}) for s in (x, y, z)]),
-            (i, 0, num_steps)),
-
+            [ray_equations[s].subs({t: min_t_tmp + i * step_size,
+                                    u: pystencils.x_staggered,
+                                    v: pystencils.y_staggered}) for s in (x, y, z)]), (i, 0, num_steps)),
         # intensity_weighting: sympy.dot(projection_vector#,
         output_projections_field.center(): (line_integral * step_size)
     })
 
     return assignments
+
+
+def backward_projection(input_projection, output_volume, projection_matrix, normalization):
+    projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
+    assignments = pystencils_reco.resampling.generic_spatial_matrix_transform(
+        input_projection, output_volume, None, inverse_matrix=projection_matrix)
+    normalized_assignments = [a / normalization for a in assignments.all_assignments]
+
+    return pystencils_reco.AssignmentCollection(normalized_assignments)
