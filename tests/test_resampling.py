@@ -13,7 +13,6 @@ from os.path import dirname, join
 import numpy as np
 import pytest
 import skimage.io
-import sympy
 
 import pystencils
 from pystencils_reco.resampling import rotation_transform, scale_transform
