@@ -82,7 +82,7 @@ def test_rotation_visualize():
     s = pystencils.data_types.TypedSymbol('s', 'float32')
     transform = rotation_transform(x, y, s).compile('gpu')
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
     tmp = zeros_like(test_image)
@@ -98,7 +98,7 @@ def test_rotation_around_center_visualize():
     import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
 
