@@ -1,0 +1,31 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2019 stephan <stephan@stephan-Z87-DS3H>
+#
+# Distributed under terms of the GPLv3 license.
+
+"""
+Implements class ProjectiveMatrix
+"""
+import sympy
+
+
+class ProjectiveMatrix(object):
+    """docstring for ProjectiveMatrix"""
+
+    def __init__(self, matrix):
+        super(ProjectiveMatrix, self).__init__()
+        self.matrix = sympy.Matrix(matrix)
+
+    def __matmul__(self, vector):
+        vector = sympy.Matrix(vector)
+        if vector.rows == self.matrix.cols:
+            return self.matrix @ vector
+        elif vector.rows + 1 == self.matrix.cols:
+            lifted_vector = sympy.Matrix([vector, [1]])
+            result = self.matrix @ lifted_vector
+            normalized_result = sympy.Matrix(result[:-1]) / result[-1]
+            return normalized_result
+
+        raise NotImplementedError(
+            "Can only multiply vectors with same number of rows or one less with ProjectiveMatrix")
