@@ -29,3 +29,7 @@ class ProjectiveMatrix(object):
 
         raise NotImplementedError(
             "Can only multiply vectors with same number of rows or one less with ProjectiveMatrix")
+
+    def nullspace(self):
+        return self.matrix.nullspace()
+        
