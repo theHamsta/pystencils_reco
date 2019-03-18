@@ -12,7 +12,7 @@ import sympy
 
 
 def test_projective_matrix():
-    matrix = ProjectiveMatrix([[2, 3, 5], [3, 2, 4], [3, 2, 4]])
+    matrix = ProjectiveMatrix([[2, 3, 5], [3, 2, 4]])
     vector = sympy.Matrix([2, 3])
     result = matrix @ vector
     print(result)
@@ -42,6 +42,8 @@ def test_projective_matrix():
     ray_equations = sympy.solve(eqn, x)
     for k, v in ray_equations.items():
         print(f"{k}: {v}")
+
+    print(projection_matrix.nullspace())
 
 
 def main():
