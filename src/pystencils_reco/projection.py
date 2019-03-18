@@ -27,10 +27,8 @@ def forward_projection(input_volume_field, output_projections_field, projection_
 
     eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
-    assert ray_equations, "Could not solve for texture_coordinates"
-    for k, v in ray_equations.items():
-        print(f'{k}: {v}')
 
+    assert len(ray_equations.keys()) == ndim - 1, "projection_matrix does not appear to define a projection"
     t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
     ray_equations = sympy.Matrix([ray_equations[s] if s != t else t for s in texture_coordinates])
 
@@ -56,34 +54,27 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (-0, True))
     intersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
                                             for f in reversed(intersection_candidates)], (-0, True))
-    print(intersection_point1)
-    print(intersection_point2)
-    assert intersection_point1 != intersection_point2
+    assert intersection_point1 != intersection_point2, \
+        "The intersection are unconditionally equal, reconstruction volume is not in detector FOV!"
 
     min_t = sympy.Min(intersection_point1, intersection_point2)
     max_t = sympy.Max(intersection_point1, intersection_point2)
-    # min_t = sympy.Piecewise((intersection_point1, intersection_point1 < intersection_point2),
-    # (intersection_point2, True))
-    # max_t = sympy.Piecewise((intersection_point1, intersection_point1 > intersection_point2),
-    # (intersection_point2, True))
-    # num_steps = sympy.ceiling(max_t-min_t) / step_size
 
     line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step = pystencils.data_types.typed_symbols(
         'line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step', 'float32')
     i = pystencils.data_types.TypedSymbol('i', 'int32')
     tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
-    # tex_coord = sympy.simplify(tex_coord)
 
     assignments = pystencils_reco.AssignmentCollection({
         min_t_tmp: min_t,
         max_t_tmp: max_t,
-        step: step_size / projection_vector_norm,
-        num_steps: ((max_t_tmp - min_t_tmp) / step),
+        step: step_size / projection_vector_norm,  # TODO: optimize also tex_coord to make this obsolete
+        num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / step),
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
-        intensity_weighting: 1,  # projection_vector.dot(central_ray) ** 2,
+        intensity_weighting: projection_vector.dot(central_ray) ** 2,
         output_projections_field.center(): (line_integral * step_size * intensity_weighting)
-        # output_projections_field.center(): num_steps
+        # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     })
 
     return assignments
