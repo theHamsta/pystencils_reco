@@ -23,20 +23,23 @@ def forward_projection(input_volume_field, output_projections_field, projection_
 
     texture_coordinates = sympy.Matrix(pystencils.typed_symbols(f'_t:{ndim}', 'float32'))
     u = output_projections_field.physical_coordinates_staggered
-    x = input_volume_field.create_staggered_physical_coordinates(texture_coordinates)
+    x = input_volume_field.create_physical_coordinates(texture_coordinates)
 
     eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
-    ray_equations = sympy.Matrix([ray_equations[t] for t in texture_coordinates[:-1]] + [texture_coordinates[-1]])
+    assert ray_equations, "Could not solve for texture_coordinates"
+    for k, v in ray_equations.items():
+        print(f'{k}: {v}')
 
-    t = texture_coordinates[-1]
+    t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
+    ray_equations = sympy.Matrix([ray_equations[s] if s != t else t for s in texture_coordinates])
 
     projection_vector = sympy.diff(ray_equations, t)
     projection_vector_norm = projection_vector.norm()
     projection_vector /= projection_vector_norm
 
     conditions = pystencils_reco._geometry.coordinate_in_field_conditions(
-        input_volume_field, texture_coordinates)
+        input_volume_field, ray_equations)
 
     central_ray = sympy.Matrix(projection_matrix.nullspace()[0][:input_volume_field.spatial_dimensions])
     central_ray /= central_ray.norm()
@@ -50,28 +53,36 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         intersection_candidates.extend(solution_min + solution_max)
 
     intersection_point1 = sympy.Piecewise(
-        *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (0.5, True))
+        *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (-0, True))
     intersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
-                                            for f in reversed(intersection_candidates)], (0.5, True))
+                                            for f in reversed(intersection_candidates)], (-0, True))
+    print(intersection_point1)
+    print(intersection_point2)
+    assert intersection_point1 != intersection_point2
 
-    min_t = sympy.Piecewise((intersection_point1, intersection_point1 < intersection_point2),
-                            (intersection_point2, True))
-    max_t = sympy.Piecewise((intersection_point1, intersection_point1 > intersection_point2),
-                            (intersection_point2, True))
+    min_t = sympy.Min(intersection_point1, intersection_point2)
+    max_t = sympy.Max(intersection_point1, intersection_point2)
+    # min_t = sympy.Piecewise((intersection_point1, intersection_point1 < intersection_point2),
+    # (intersection_point2, True))
+    # max_t = sympy.Piecewise((intersection_point1, intersection_point1 > intersection_point2),
+    # (intersection_point2, True))
     # num_steps = sympy.ceiling(max_t-min_t) / step_size
 
     line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting = pystencils.data_types.typed_symbols(
         'line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting', 'float32')
     i = pystencils.data_types.TypedSymbol('i', 'int32')
+    tex_coord = ray_equations.subs({t: min_t_tmp + i * step_size})
+    # tex_coord = sympy.simplify(tex_coord)
 
     assignments = pystencils_reco.AssignmentCollection({
         min_t_tmp: min_t,
         max_t_tmp: max_t,
-        num_steps: sympy.ceiling(max_t_tmp - min_t_tmp / step_size),
-        line_integral: sympy.Sum(volume_texture.at(ray_equations.subs({t: min_t_tmp + i * step_size}).simplify()),
+        num_steps: ((max_t_tmp - min_t_tmp) / (step_size/projection_vector_norm)),
+        line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
-        intensity_weighting: projection_vector.dot(central_ray) ** 2,
-        output_projections_field.center(): (line_integral * step_size * intensity_weighting)
+        intensity_weighting: 1,  # projection_vector.dot(central_ray) ** 2,
+        # output_projections_field.center(): (line_integral * step_size * intensity_weighting)
+        output_projections_field.center(): num_steps
     })
 
     return assignments

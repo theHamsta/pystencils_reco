@@ -11,6 +11,7 @@
 import itertools
 
 import sympy
+
 # Would be way cooler if sympy.geometry supported Polygons in 3D 😞
 # Let's use this SymPy fork then
 # from diofant.geometry import Line, Point, Polygon, convex_hull, intersection
@@ -68,7 +69,7 @@ def calc_box_ray_intersections(field, field_equations, coordinate_symbols):
     return corner_points
 
 
-def coordinate_in_field_conditions(field, coordinate_symbols):
+def coordinate_in_field_conditions(field, coordinate_symbols, eps=1e-3):
     """get_field_box
 
     :param field:
@@ -77,4 +78,4 @@ def coordinate_in_field_conditions(field, coordinate_symbols):
     # box_intervals = [sympy.Interval(0, s-1) for s in field.spatial_shape]
 
     # return list(coordinate in interval for coordinate, interval in zip(coordinate_vector, box_intervals))
-    return list(c > 0 for c in coordinate_vector)+list(c < shape-1 for c, shape in zip(coordinate_vector, field.spatial_shape))
+    return list(c >= -eps for c in coordinate_vector)+list(c <= shape+eps for c, shape in zip(coordinate_vector, field.spatial_shape))
