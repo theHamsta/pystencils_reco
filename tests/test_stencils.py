@@ -33,6 +33,23 @@ def test_BallStencil():
                 print(stencil)
 
 
+def test_strided():
+
+    for with_center in (True, False):
+        for ndim in range(1, 4):
+            strides = list(range(2, 2+ndim))
+            for radius in (5,):
+                stencil = BallStencil(radius, ndim, with_center=with_center).as_strided(strides)
+                print(stencil)
+
+    for with_center in (True, False):
+        for ndim in range(1, 4):
+            strides = [2] * ndim
+            for radius in (5,):
+                stencil = BallStencil(radius, ndim, with_center=with_center).as_strided(strides)
+                print(stencil)
+
+
 def test_BoxStencil_non_quadratic():
     stencil = BoxStencil((3, 5))
     print(stencil)
@@ -43,6 +60,7 @@ def main():
     test_BoxStencil()
     test_BallStencil()
     test_BoxStencil_non_quadratic()
+    test_strided()
 
 
 if __name__ == '__main__':

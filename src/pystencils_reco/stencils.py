@@ -10,7 +10,7 @@ and :func: ~pystencils_reco.stencils.BallStencil
 """
 import itertools
 import math
-from typing import Union
+from typing import Tuple, Union
 
 import pampy
 
@@ -30,6 +30,11 @@ class Stencil(list):
                 self.remove(tuple([0]*ndim))
             except ValueError:
                 pass
+
+    def as_strided(self, strides: Tuple):
+        """Converts a regular Stencil into a strided stencil by omitted every n-th element along each dimension"""
+        new_stencil = [s for s in self if all(s[i] % t == 0 for i, t in enumerate(strides))]
+        return Stencil(new_stencil, self.ndim)
 
 
 class LineStencil(Stencil):
