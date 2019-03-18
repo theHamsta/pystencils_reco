@@ -10,11 +10,10 @@
 
 import itertools
 
-import diofant
 import sympy
 # Would be way cooler if sympy.geometry supported Polygons in 3D 😞
 # Let's use this SymPy fork then
-from diofant.geometry import Line, Point, Polygon, convex_hull, intersection
+# from diofant.geometry import Line, Point, Polygon, convex_hull, intersection
 
 
 def get_field_box_corner_points(field):
@@ -75,8 +74,6 @@ def coordinate_in_field_conditions(field, coordinate_symbols):
     :param field:
     """
     coordinate_vector = sympy.Matrix(coordinate_symbols)
-    coordinate_vector = field.coordinate_transform.inv() @ (coordinate_vector-field.coordinate_origin)
-
     # box_intervals = [sympy.Interval(0, s-1) for s in field.spatial_shape]
 
     # return list(coordinate in interval for coordinate, interval in zip(coordinate_vector, box_intervals))
