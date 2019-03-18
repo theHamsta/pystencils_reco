@@ -10,6 +10,7 @@ Implements a generic forward and backprojection projections
 
 import sympy
 
+import pystencils
 import pystencils.astnodes
 import pystencils_reco._geometry
 
@@ -17,31 +18,41 @@ import pystencils_reco._geometry
 def forward_projection(input_volume_field, output_projections_field, projection_matrix, step_size=1):
 
     volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field)
+    ndim = input_volume_field.spatial_dimensions
+    projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
-    x, y, z = sympy.symbols('x,y,z')
-    u, v, t = sympy.symbols('u,v,t')
-    lhs = sympy.Matrix(projection_matrix) * sympy.Matrix([x, y, z, 1])
-    rhs = [u*t, v*t, t]
+    texture_coordinates = sympy.Matrix(pystencils.typed_symbols(f'_t:{ndim}', 'float32'))
+    u = output_projections_field.physical_coordinates_staggered
+    x = input_volume_field.create_staggered_physical_coordinates(texture_coordinates)
 
-    ray_equations = sympy.solve([a-b for a, b in zip(lhs, rhs)], [x, y, z], rational=False)
-    projection_vector = sympy.Matrix([sympy.diff(ray_equations[s], t) for s in (x, y, z)])
+    eqn = projection_matrix @ x - u
+    ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
+    ray_equations = sympy.Matrix([ray_equations[t] for t in texture_coordinates[:-1]] + [texture_coordinates[-1]])
+
+    t = texture_coordinates[-1]
+
+    projection_vector = sympy.diff(ray_equations, t)
     projection_vector_norm = projection_vector.norm()
     projection_vector /= projection_vector_norm
+
     conditions = pystencils_reco._geometry.coordinate_in_field_conditions(
-        input_volume_field, [ray_equations[x], ray_equations[y], ray_equations[z]])
-    # source_position = projection_matrix.nullspace()
-    # assert source_position[3] == 0
+        input_volume_field, texture_coordinates)
+
+    central_ray = sympy.Matrix(projection_matrix.nullspace()[0][:input_volume_field.spatial_dimensions])
+    central_ray /= central_ray.norm()
 
     intersection_candidates = []
-    for i, s in enumerate((x, y, z)):
-        intersection_candidates.append(sympy.solve(ray_equations[s], [t], rational=False)[0])
-        intersection_candidates.append(sympy.solve(
-            ray_equations[s]-input_volume_field.spatial_shape[i], [t], rational=False)[0])
+    for i in range(ndim):
+        solution_min = sympy.solve(ray_equations[i], t, rational=False)
+        solution_max = sympy.solve(ray_equations[i] - input_volume_field.spatial_shape[i],
+                                   t,
+                                   rational=False)
+        intersection_candidates.extend(solution_min + solution_max)
 
     intersection_point1 = sympy.Piecewise(
-        *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (0, True))
+        *[(f, sympy.And(*conditions).subs({t: f})) for f in intersection_candidates], (0.5, True))
     intersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
-                                            for f in reversed(intersection_candidates)], (0, True))
+                                            for f in reversed(intersection_candidates)], (0.5, True))
 
     min_t = sympy.Piecewise((intersection_point1, intersection_point1 < intersection_point2),
                             (intersection_point2, True))
@@ -49,41 +60,18 @@ def forward_projection(input_volume_field, output_projections_field, projection_
                             (intersection_point2, True))
     # num_steps = sympy.ceiling(max_t-min_t) / step_size
 
-    line_integral, i, num_steps, min_t_tmp, max_t_tmp, intensity_weighting = sympy.symbols(
-        'line_integral,i, num_steps, min_t_tmp, max_t_tmp, intensity_weighting')
-    # point1 = sympy.geometry.Point([ray_equations[s].subs({t: 0}) for s in (x, y, z)])
-    # point2 = sympy.geometry.Point([ray_equations[s].subs({t: 100}) for s in (x, y, z)])
-    # projection_ray = sympy.geometry.Line(point1, point2)
-    # volume_box = pystencils_reco._geometry.get_field_box_boundary(input_volume_field)
-    # volume_box = pystencils_reco._geometry.get_field_box_corner_points(input_volume_field)
-    # ray_intersection_points = sympy.geometry.intersection(volume_box, projection_ray)
-
-    # box = pystencils_reco._geometry.get_field_box(input_volume_field)
-    # print(ray_intersection_points)
-
-    # print(in_box_conditions)
-    # ray_box_intersections = sympy.solve(ray_equations.values() + in_box_conditions)
-    # print(ray_box_intersections)
-
-    # point1 = sympy.geometry.Point([ray_equations[s].subs({t: 0}) for s in (x, y, z)])
-    # point2 = sympy.geometry.Point([ray_equations[s].subs({t: 100}) for s in (x, y, z)])
-    # projection_ray = sympy.geometry.Line(point1, point2)
-    # volume_box = pystencils_reco._geometry.get_field_box(input_volume_field)
-    # ray_segment = volume_box.interection(projection_ray)
-    # print(ray_segment)
-
-    # step_size *= projection_vector_norm
+    line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting = pystencils.data_types.typed_symbols(
+        'line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting', 'float32')
+    i = pystencils.data_types.TypedSymbol('i', 'int32')
 
     assignments = pystencils_reco.AssignmentCollection({
-        min_t_tmp: min_t.subs({u: pystencils.x_staggered, v: pystencils.y_staggered}),
-        max_t_tmp: max_t.subs({u: pystencils.x_staggered, v: pystencils.y_staggered}),
-        num_steps: sympy.ceiling(max_t_tmp-min_t_tmp / step_size),
-        line_integral: sympy.Sum(volume_texture.at(
-            [ray_equations[s].subs({t: min_t_tmp + i * step_size,
-                                    u: pystencils.x_staggered,
-                                    v: pystencils.y_staggered}) for s in (x, y, z)]), (i, 0, num_steps)),
-        # intensity_weighting: sympy.dot(projection_vector#,
-        output_projections_field.center(): (line_integral * step_size)
+        min_t_tmp: min_t,
+        max_t_tmp: max_t,
+        num_steps: sympy.ceiling(max_t_tmp - min_t_tmp / step_size),
+        line_integral: sympy.Sum(volume_texture.at(ray_equations.subs({t: min_t_tmp + i * step_size}).simplify()),
+                                 (i, 0, num_steps)),
+        intensity_weighting: projection_vector.dot(central_ray) ** 2,
+        output_projections_field.center(): (line_integral * step_size * intensity_weighting)
     })
 
     return assignments
