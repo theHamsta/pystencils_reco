@@ -117,12 +117,12 @@ def test_rotation_around_center_visualize():
 
 
 def main():
-    # test_scaling()
-    # test_rotation()
-    # test_scaling_compilation()
-    # test_rotation_compilation()
-    # test_scaling_visualize()
-    # test_rotation_visualize()
+    test_scaling()
+    test_rotation()
+    test_scaling_compilation()
+    test_rotation_compilation()
+    test_scaling_visualize()
+    test_rotation_visualize()
     test_rotation_around_center_visualize()
 
 
