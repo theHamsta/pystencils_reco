@@ -32,7 +32,10 @@ class Stencil(list):
                 pass
 
     def as_strided(self, strides: Tuple):
-        """Converts a regular Stencil into a strided stencil by omitted every n-th element along each dimension"""
+        """
+        Converts a regular Stencil into a strided stencil by omitting
+        every i,j,n-th element along the different dimensions
+        """
         new_stencil = [s for s in self if all(s[i] % t == 0 for i, t in enumerate(strides))]
         return Stencil(new_stencil, self.ndim)
 
