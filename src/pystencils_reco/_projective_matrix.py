@@ -14,14 +14,16 @@ class ProjectiveMatrix(object):
     """docstring for ProjectiveMatrix"""
 
     def __init__(self, matrix):
-        super(ProjectiveMatrix, self).__init__()
+        if isinstance(matrix, ProjectiveMatrix):
+            matrix = matrix.matrix
         self.matrix = sympy.Matrix(matrix)
 
     def __matmul__(self, vector):
         vector = sympy.Matrix(vector)
         if vector.rows == self.matrix.cols:
             return self.matrix @ vector
-        elif vector.rows + 1 == self.matrix.cols:
+
+        if vector.rows + 1 == self.matrix.cols:
             lifted_vector = sympy.Matrix([vector, [1]])
             result = self.matrix @ lifted_vector
             normalized_result = sympy.Matrix(result[:-1]) / result[-1]
