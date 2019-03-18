@@ -59,17 +59,23 @@ def forward_projection(input_volume_field, output_projections_field, projection_
 
     min_t = sympy.Min(intersection_point1, intersection_point2)
     max_t = sympy.Max(intersection_point1, intersection_point2)
+    # parametrization_dim = list(ray_equations).index(t)
+    # min_t = 0
+    # max_t = input_volume_field.spatial_shape[parametrization_dim]
 
     line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step = pystencils.data_types.typed_symbols(
         'line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step', 'float32')
     i = pystencils.data_types.TypedSymbol('i', 'int32')
-    tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
+    num_steps = pystencils.data_types.TypedSymbol('num_steps', 'int32')
+
+    # step = step_size / projection_vector_norm
+    # tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
+    tex_coord = ray_equations.subs({t: min_t_tmp}) + projection_vector * i
 
     assignments = pystencils_reco.AssignmentCollection({
         min_t_tmp: min_t,
         max_t_tmp: max_t,
-        step: step_size / projection_vector_norm,  # TODO: optimize also tex_coord to make this obsolete
-        num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / step),
+        num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / (step_size / projection_vector_norm)),
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
         intensity_weighting: projection_vector.dot(central_ray) ** 2,
