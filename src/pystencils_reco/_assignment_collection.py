@@ -29,8 +29,14 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         """Convenience wrapper for pystencils.create_kernel(...).compile()
         See :func: ~pystencils.create_kernel
         """
+        if 'data_type' not in kwargs:
+            kwargs['data_type'] = 'float'
+
+        if 'cpu_openmp' not in kwargs:
+            kwargs['cpu_openmp'] = True
 
         return pystencils.create_kernel(self, target, *args, **kwargs).compile()
+
 
     def backward(self):
         if not self._autodiff:
