@@ -21,15 +21,22 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     ndim = input_volume_field.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
+    t = pystencils.typed_symbols('_parametrization', 'float32')
     texture_coordinates = sympy.Matrix(pystencils.typed_symbols(f'_t:{ndim}', 'float32'))
     u = output_projections_field.physical_coordinates_staggered
     x = input_volume_field.create_physical_coordinates(texture_coordinates)
 
-    eqn = projection_matrix @ x - u
+    is_perspective = projection_matrix.matrix.cols == ndim + 1
+
+    if is_perspective:
+        eqn = projection_matrix @ sympy.Matrix([*x, 1]) - sympy.Matrix([*(t*u), t])
+    else:
+        eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
 
-    assert len(ray_equations.keys()) == ndim - 1, "projection_matrix does not appear to define a projection"
-    t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
+    if not is_perspective:
+        t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
+        assert len(ray_equations.keys()) == ndim - 1, "projection_matrix does not appear to define a projection"
     ray_equations = sympy.Matrix([ray_equations[s] if s != t else t for s in texture_coordinates])
 
     projection_vector = sympy.diff(ray_equations, t)
