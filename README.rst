@@ -6,7 +6,6 @@ You can use it to generate C/C++ or CUDA for various frameworks including `waLBe
 
 This repository implements routines commonly needed for image processing and CT reconstruction.
 
-
 Installation
 ============
 
