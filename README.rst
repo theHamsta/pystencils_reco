@@ -16,7 +16,7 @@ Install via pip :
 
    pip install TODO
 
-or if you downloaded this repository (https://git5.cs.fau.de/PyConrad/pyCONRAD) using:
+or if you downloaded this repository using:
 
 .. code-block:: bash
 
