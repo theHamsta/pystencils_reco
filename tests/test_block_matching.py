@@ -40,7 +40,7 @@ def test_block_matching():
 
 def test_block_matching_gpu():
     import pyconrad.autoinit
-    import pycuda.autoinit
+    import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, zeros
 
     block_stencil = BallStencil(5, ndim=2)
