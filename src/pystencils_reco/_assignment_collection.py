@@ -37,7 +37,6 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
         return pystencils.create_kernel(self, target, *args, **kwargs).compile()
 
-
     def backward(self):
         if not self._autodiff:
             self._create_autodiff()
