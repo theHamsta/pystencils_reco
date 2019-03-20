@@ -20,7 +20,9 @@ def block_matching_integer_offsets(input_field: Field,
                                    matching_stencil,
                                    matching_function=pystencils_reco.functions.squared_difference):
 
-    assert output_block_scores.index_dimensions == len(matching_stencil), \
+    assert output_block_scores.index_dimensions == 1, \
+        "output_block_scores must have channels equal to the length of matching_stencil"
+    assert output_block_scores.index_shape[0] == len(matching_stencil), \
         "Channels/index_dimensions of output_block_scores must match length of matching_stencil"
 
     assignments = []
@@ -29,10 +31,15 @@ def block_matching_integer_offsets(input_field: Field,
         rhs = 0
 
         for s in block_stencil:
-            rhs += matching_function(input_field(s), comparision_field(s))
+            shifted = tuple(i+j for i, j in zip(s, m))
+            rhs += matching_function(input_field[s], comparision_field[shifted])
 
-        lhs = output_block_scores.center()(i)
+        lhs = output_block_scores(i)
         assignment = pystencils.Assignment(lhs, rhs)
         assignments.append(assignment)
 
-    return AssignmentCollection(assignments)
+    return AssignmentCollection(assignments, perform_cse=False)
+
+
+
+
