@@ -30,7 +30,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         See :func: ~pystencils.create_kernel
         """
         if 'data_type' not in kwargs:
-            kwargs['data_type'] = 'float'
+            kwargs['data_type'] = 'float32'
 
         if 'cpu_openmp' not in kwargs:
             kwargs['cpu_openmp'] = True
@@ -43,11 +43,14 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         return self._autodiff.backward_assignments
 
     def create_pytorch_op(self, **field_name_kwargs):
+        input_field_to_tensor_map = {f: field_name_kwargs[f.name] for f in self.free_fields}
+        constant_fields = [f for f, t in input_field_to_tensor_map.items() if not t.requires_grad]
+
         if not self._autodiff:
-            self._create_autodiff()
-        input_field_to_tensor_map = {f: field_name_kwargs[f.name] for f in self._autodiff.forward_fields}
+            self._create_autodiff(constant_fields)
 
         return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch')
 
-    def _create_autodiff(self):
-        self._autodiff = pystencils.autodiff.AutoDiffOp(self, operation_name="", diff_mode='transposed-forward')
+    def _create_autodiff(self, constant_fields=[]):
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            self, operation_name="", diff_mode='transposed-forward', constant_fields=constant_fields)
