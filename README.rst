@@ -1,19 +1,31 @@
-===============
 pystencils_reco
 ===============
 
+`pystencils` is a HPC code generation framework based on SymPy.
+You can use it to generate C/C++ or CUDA for various frameworks including waLBerla, Torch, Tensorflow.
 
-Add a short description here!
-
-
-Description
-===========
-
-A longer description of your project goes here...
+This repository implements routines commonly needed for image processing and CT reconstruction.
 
 
-Note
-====
+Installation
+============
 
-This project has been set up using PyScaffold 3.1. For details and usage
-information on PyScaffold see https://pyscaffold.org/.
+Install via pip :
+
+.. code-block:: bash
+
+   pip install TODO
+
+or if you downloaded this repository (https://git5.cs.fau.de/PyConrad/pyCONRAD) using:
+
+.. code-block:: bash
+
+   pip install -e .
+
+
+Usage
+=====
+
+**TODO**. Have a look at the `tests <tests>`_
+
+
