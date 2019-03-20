@@ -31,7 +31,7 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     if is_perspective:
         eqn = projection_matrix @ sympy.Matrix([*x, 1]) - sympy.Matrix([*(t*u), t])
     else:
-        eqn = projection_matrix @ x - u
+        eqn = projection_matrix @ x - u  # this also works for perspective/cone beam projection
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
 
     if not is_perspective:
