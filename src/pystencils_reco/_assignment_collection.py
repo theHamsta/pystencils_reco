@@ -40,7 +40,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     def backward(self):
         if not self._autodiff:
             self._create_autodiff()
-        return self._autodiff.backward_assignments
+        return AssignmentCollection(self._autodiff.backward_assignments)
 
     def create_pytorch_op(self, **field_name_kwargs):
         input_field_to_tensor_map = {f: field_name_kwargs[f.name] for f in self.free_fields}
