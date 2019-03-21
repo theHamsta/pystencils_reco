@@ -8,16 +8,19 @@
 
 """
 
-import os
 from os.path import dirname, join
 
 import numpy as np
-import pytest
 import skimage.io
 
 import pystencils
 import pystencils_reco.morphology
 from pystencils_reco.stencils import BallStencil
+
+try:
+    import pyconrad.autoinit
+except:
+    from unittest.mock import pyconrad
 
 
 def test_morphology():
@@ -27,9 +30,7 @@ def test_morphology():
     # TODO
 
 
-@pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip visualization tests on CI")
 def test_visualize_morphology():
-    import pyconrad.autoinit
     print(BallStencil(1, ndim=2))
 
     x, y = pystencils.fields('x,y: uint8[2d]')
