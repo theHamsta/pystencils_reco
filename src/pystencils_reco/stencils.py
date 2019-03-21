@@ -61,7 +61,7 @@ class BoxStencil(Stencil):
                               int, lambda _: itertools.product(
                                   range(-(kernel_size//2), -(kernel_size//2)+kernel_size), repeat=ndim),
                               pampy.ANY, lambda _: itertools.product(
-                                  *[range(-(i//2), i//2 + i) for i in kernel_size])
+                                  *[range(-(i//2), -(i//2) + i) for i in kernel_size])
                               )
 
         if isinstance(kernel_size, int):
