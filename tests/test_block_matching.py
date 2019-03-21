@@ -11,11 +11,17 @@ from os.path import dirname, join
 
 import numpy as np
 import skimage.io
-from tqdm import trange
+from tqdm import tqdm, trange
 
 import pystencils
-from pystencils_reco.block_matching import block_matching_integer_offsets
-from pystencils_reco.stencils import BallStencil
+from pystencils_reco.block_matching import (block_matching_integer_offsets,
+                                            single_block_matching)
+from pystencils_reco.stencils import BallStencil, BoxStencil
+
+try:
+    import pyconrad.autoinit
+except:  # NOQA
+    from unittest.mock import pyconrad
 
 
 def test_block_matching():
@@ -29,7 +35,7 @@ def test_block_matching():
     print(block_matching)
     block_matching = block_matching.compile('cpu')
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     result = np.zeros([*test_image.shape, len(matching_stencil)], np.float32)
     block_matching(x=test_image, y=test_image, matches=result)
@@ -38,8 +44,51 @@ def test_block_matching():
     pyconrad.imshow(np.swapaxes(result, 0, -1), 'result')
 
 
+def test_larger_blocks():
+    block_stencil = BoxStencil(8, ndim=2)
+    matching_stencil = BallStencil(8, ndim=2)
+
+    print('forward')
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
+    block_matching = block_matching_integer_offsets(x, y, matches, block_stencil, matching_stencil)
+    print(str(len(block_matching.all_assignments)) + " assignments")
+    print('compile')
+    _ = block_matching.compile('cpu')
+    print('backward')
+    backward = block_matching.backward()
+    print('print')
+    print(backward.compile())
+    # block_matching.backward().compile()
+    print('backward')
+
+
+def test_combination_single_block_matching():
+    block_stencil = BoxStencil(9, ndim=2)
+    matching_stencil = BallStencil(5, ndim=2)
+
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
+    offset = pystencils.typed_symbols('o:2', 'int32')
+    i = pystencils.typed_symbols('i', 'int32')
+    assignments = []
+    print(len(matching_stencil))
+    block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
+    print('backward')
+    backward = block_matching.backward()
+    print('print')
+    print(block_matching.backward())
+
+    # kernel = block_matching.compile('gpu', ghost_layers=0)
+    # print(kernel.code)
+    # print('forward')
+    # backward = block_matching.backward()
+    # print(backward)
+    # backward_kernel = backward.compile('gpu', ghost_layers=0)
+
+    # print(backward_kernel.code)
+    # print('backward')
+
+
 def test_block_matching_gpu():
-    import pyconrad.autoinit
     import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, zeros
 
@@ -51,7 +100,7 @@ def test_block_matching_gpu():
     # print(block_matching)
     block_matching = block_matching.compile('gpu')
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = to_gpu(np.ascontiguousarray(test_image, np.float32))
     result = zeros([*test_image.shape, len(matching_stencil)], np.float32)
     for i in trange(1000):
@@ -63,7 +112,9 @@ def test_block_matching_gpu():
 
 def main():
     # test_block_matching()
-    test_block_matching_gpu()
+    # test_combination_single_block_matching()
+    # test_block_matching_gpu()
+    test_larger_blocks()
 
 
 if __name__ == '__main__':
