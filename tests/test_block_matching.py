@@ -17,7 +17,8 @@ import pystencils
 import pystencils.gpucuda.cudajit
 from pystencils.astnodes import ForEach
 from pystencils_reco.block_matching import (
-    block_matching_integer_offsets_unrolled, single_block_matching)
+    block_matching_integer_offsets, block_matching_integer_offsets_unrolled,
+    single_block_matching)
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
 try:
@@ -26,8 +27,7 @@ except:  # NOQA
     from unittest.mock import pyconrad
 
 
-def test_block_matching():
-    import pyconrad.autoinit
+def test_block_matching_unrolled():
 
     block_stencil = BallStencil(3, ndim=2)
     matching_stencil = BallStencil(3, ndim=2)
@@ -44,6 +44,48 @@ def test_block_matching():
     pyconrad.imshow(test_image, 'original')
     pyconrad.imshow(test_image, 'compare')
     pyconrad.imshow(np.swapaxes(result, 0, -1), 'result')
+
+
+def test_block_matching():
+
+    block_stencil = BallStencil(3, ndim=2)
+    matching_stencil = BallStencil(3, ndim=2)
+
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
+    block_matching = block_matching_integer_offsets(
+        x, y, matches, block_stencil, matching_stencil, compilation_target='cpu')
+    print(block_matching.code)
+
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
+    test_image = np.ascontiguousarray(test_image, np.float32)
+    result = np.zeros([*test_image.shape, len(matching_stencil)], np.float32)
+    block_matching(x=test_image, y=test_image, matches=result)
+    pyconrad.imshow(test_image, 'original')
+    pyconrad.imshow(test_image, 'compare')
+    pyconrad.imshow(np.swapaxes(result, 0, -1), 'result')
+
+
+def test_block_matching_gpu():
+    import pycuda.autoinit  # noqa
+    from pycuda.gpuarray import to_gpu
+
+    block_stencil = BallStencil(3, ndim=2)
+    matching_stencil = BallStencil(3, ndim=2)
+
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
+    block_matching = block_matching_integer_offsets(
+        x, y, matches, block_stencil, matching_stencil, compilation_target='gpu')
+    print(block_matching.code)
+
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
+    test_image = np.ascontiguousarray(test_image, np.float32)
+    result = np.zeros([*test_image.shape, len(matching_stencil)], np.float32)
+    test_image = to_gpu(test_image)
+    result = to_gpu(result)
+    block_matching(x=test_image, y=test_image, matches=result)
+    pyconrad.imshow(test_image, 'original')
+    pyconrad.imshow(test_image, 'compare')
+    pyconrad.imshow(np.swapaxes(result.get(), 0, -1), 'result')
 
 
 def test_larger_blocks():
@@ -119,7 +161,7 @@ def test_for_each_3d():
     # print('backward')
 
 
-def test_block_matching_gpu():
+def test_block_matching_unrolled_gpu():
     import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, zeros
 
@@ -142,11 +184,11 @@ def test_block_matching_gpu():
 
 
 def main():
-    # test_block_matching()
+    test_block_matching_gpu()
     # test_combination_single_block_matching()
     # test_block_matching_gpu()
     # test_larger_blocks()
-    test_for_each()
+    # test_for_each()
 
 
 if __name__ == '__main__':
