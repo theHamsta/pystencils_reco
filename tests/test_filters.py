@@ -29,6 +29,18 @@ def test_mean_filter():
     print(assignments)
 
 
+def test_mean_filter_with_crazy():
+    x = np.random.rand(20, 30)
+    y = np.zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    print(assignments)
+
+    assignments = pystencils_reco.filters.mean_filter(
+        input_field=x, output_field=y, stencil=BoxStencil(3, ndim=2, with_center=False))
+    print(assignments)
+
+
 def test_mean_filter_evaluation():
     x, y = pystencils.fields('x,y: float32[2d]')
     x_array = np.random.rand(20, 23, 25).astype(np.float32)

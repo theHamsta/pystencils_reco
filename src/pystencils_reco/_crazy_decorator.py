@@ -8,7 +8,10 @@
 
 """
 
-from pystencils.field import create_from_numpy_array
+import inspect
+from uuid import uuid4
+
+from pystencils.field import Field
 
 try:
     import torch
@@ -24,9 +27,11 @@ except ImportError:
 def crazy(function):
 
     def wrapper(*args, **kwargs):
-        compile_args = [create_from_numpy_array(a) if hasattr(a, '__array__') else a for a in args]
-        compile_kwargs = {k: create_from_numpy_array(a) if hasattr(
-            a, '__array__') else a for k, a in zip(kwargs.items())}
+        arg_names = inspect.getfullargspec(function).args
+        compile_args = [Field.create_from_numpy_array(
+            arg_names[i], a) if hasattr(a, '__array__') else a for i, a in enumerate(args)]
+        compile_kwargs = {k: Field.create_from_numpy_array(str(k), a) if hasattr(
+            a, '__array__') else a for (k, a) in kwargs.items()}
 
         assignments = function(*compile_args, **compile_kwargs)
 
