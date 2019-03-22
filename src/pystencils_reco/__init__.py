@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from pkg_resources import DistributionNotFound, get_distribution
 
+from pystencils_reco._assignment_collection import AssignmentCollection
+from pystencils_reco._crazy_decorator import crazy
+from pystencils_reco._projective_matrix import ProjectiveMatrix
 
 try:
     # Change here if project is renamed and does not equal the package name
@@ -11,5 +14,5 @@ except DistributionNotFound:
 finally:
     del get_distribution, DistributionNotFound
 
-from pystencils_reco._projective_matrix import ProjectiveMatrix
-from pystencils_reco._assignment_collection import AssignmentCollection
+
+__all__ = ['AssignmentCollection', 'crazy', 'ProjectiveMatrix']
