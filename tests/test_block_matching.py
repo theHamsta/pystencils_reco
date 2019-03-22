@@ -14,6 +14,8 @@ import skimage.io
 from tqdm import tqdm, trange
 
 import pystencils
+import pystencils.gpucuda.cudajit
+from pystencils.astnodes import ForEach, KernelFunction, ForLoop
 from pystencils_reco.block_matching import (block_matching_integer_offsets,
                                             single_block_matching)
 from pystencils_reco.stencils import BallStencil, BoxStencil
@@ -73,10 +75,38 @@ def test_combination_single_block_matching():
     print(len(matching_stencil))
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     print('backward')
-    backward = block_matching.backward()
+    backward = block_matching.backward().compile('gpu', ghost_layers=0)
     print('print')
-    print(block_matching.backward())
+    print(backward.code)
 
+
+def test_for_each():
+    block_stencil = BoxStencil(9, ndim=2)
+    matching_stencil = BallStencil(3, ndim=2)
+
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
+    offset = pystencils.typed_symbols('o:2', 'int32')
+    i = pystencils.typed_symbols('i', 'int32')
+    block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
+    ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
+    ast._body = ForEach(ast.body, offset, matching_stencil, i)
+    # ast = ForLoop(ast.body,  i, 0, 10, 2)
+    kernel = pystencils.gpucuda.cudajit.make_python_function(ast)
+    print(kernel.code)
+
+def test_for_each_3d():
+    block_stencil = BoxStencil(3, ndim=3)
+    matching_stencil = BallStencil(3, ndim=3)
+
+    x, y, matches = pystencils.fields('x,y, matches(%i): float32[3d]' % len(matching_stencil))
+    offset = pystencils.typed_symbols('o:2', 'int32')
+    i = pystencils.typed_symbols('i', 'int32')
+    block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
+    ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
+    ast._body = ForEach(ast.body, offset, matching_stencil, i)
+    # ast = ForLoop(ast.body,  i, 0, 10, 2)
+    kernel = pystencils.gpucuda.cudajit.make_python_function(ast)
+    print(kernel.code)
     # kernel = block_matching.compile('gpu', ghost_layers=0)
     # print(kernel.code)
     # print('forward')
@@ -114,7 +144,8 @@ def main():
     # test_block_matching()
     # test_combination_single_block_matching()
     # test_block_matching_gpu()
-    test_larger_blocks()
+    # test_larger_blocks()
+    test_for_each()
 
 
 if __name__ == '__main__':

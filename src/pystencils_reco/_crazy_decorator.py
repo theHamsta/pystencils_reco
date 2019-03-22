@@ -9,7 +9,6 @@
 """
 
 import inspect
-from uuid import uuid4
 
 from pystencils.field import Field
 

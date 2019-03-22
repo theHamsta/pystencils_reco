@@ -13,8 +13,10 @@ import sympy
 import pystencils
 import pystencils.astnodes
 import pystencils_reco._geometry
+from pystencils_reco import crazy
 
 
+@crazy
 def forward_projection(input_volume_field, output_projections_field, projection_matrix, step_size=1):
 
     volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field)
@@ -93,6 +95,7 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     return assignments
 
 
+@crazy
 def backward_projection(input_projection, output_volume, projection_matrix, normalization):
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
     assignments = pystencils_reco.resampling.generic_spatial_matrix_transform(

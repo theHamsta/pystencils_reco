@@ -14,8 +14,9 @@ import sympy
 
 import pystencils
 from pystencils_reco import AssignmentCollection
+from pystencils_reco import crazy
 
-
+@crazy
 def generic_spatial_matrix_transform(input_field, output_field, transform_matrix, inverse_matrix=None):
     texture = pystencils.astnodes.TextureCachedField(input_field)
 
@@ -32,6 +33,7 @@ def generic_spatial_matrix_transform(input_field, output_field, transform_matrix
     return assignments
 
 
+@crazy
 def scale_transform(input_field, output_field, scaling_factor):
     """scale_transform
 
@@ -48,6 +50,7 @@ def scale_transform(input_field, output_field, scaling_factor):
     return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
 
 
+@crazy
 def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=None):
     if input_field.spatial_dimensions == 3:
         assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
@@ -64,6 +67,7 @@ def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=
                                             inverse_matrix=transform_matrix.T)
 
 
+@crazy
 def resample(input_field, output_field):
     """
     Resample input_field with its coordinate system in terms of the coordinate system of output_field

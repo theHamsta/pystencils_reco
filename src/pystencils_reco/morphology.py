@@ -9,17 +9,21 @@ Implements morphological operations
 """
 import sympy
 
+from pystencils_reco import crazy
 from pystencils_reco._assignment_collection import AssignmentCollection
 
 
+@crazy
 def binary_erosion(input_field, output_field, stencil):
     return _morphological(input_field, output_field, stencil, is_erosion=True)
 
 
+@crazy
 def binary_dilation(input_field, output_field, stencil):
     return _morphological(input_field, output_field, stencil, is_erosion=False)
 
 
+@crazy
 def _morphological(input_field, output_field, stencil, is_erosion):
     sum = 0
     for s in stencil:

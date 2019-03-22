@@ -7,13 +7,16 @@
 """
 
 """
-import pystencils
-import pystencils_reco.functions
-from pystencils import Field
-from pystencils_reco import AssignmentCollection
 import sympy
 from tqdm import tqdm
 
+import pystencils
+import pystencils_reco.functions
+from pystencils import Field
+from pystencils_reco import AssignmentCollection, crazy
+
+
+@crazy
 def block_matching_integer_offsets(input_field: Field,
                                    comparision_field: Field,
                                    output_block_scores: Field,
@@ -44,6 +47,7 @@ def block_matching_integer_offsets(input_field: Field,
     return AssignmentCollection(assignments, perform_cse=False)
 
 
+@crazy
 def single_block_matching(input_field: Field,
                           comparision_field: Field,
                           output_block_scores: Field,
@@ -69,6 +73,7 @@ def single_block_matching(input_field: Field,
     return AssignmentCollection(assignments, perform_cse=False)
 
 
+@crazy
 def collect_patches(block_scores: Field,
                     patches: Field,
                     block_stencil,
@@ -94,4 +99,3 @@ def collect_patches(block_scores: Field,
         assignments.append(assignment)
 
     return AssignmentCollection(assignments, perform_cse=False)
-

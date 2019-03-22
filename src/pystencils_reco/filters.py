@@ -14,8 +14,10 @@ import pystencils
 import pystencils.simp
 import pystencils_reco.functions
 from pystencils_reco._assignment_collection import AssignmentCollection
+from pystencils_reco import crazy
 
 
+@crazy
 def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil):
     assignments = AssignmentCollection({
         output_field.center(): sum(input_field[t] for t in stencil) / len(stencil)
@@ -24,12 +26,14 @@ def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, s
     return assignments
 
 
+@crazy
 def gauss_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil, sigma):
 
     weighting_function = functools.partial(pystencils_reco.functions.gaussian, sigma=sigma)
     return generic_stationary_filter(input_field, output_field, stencil, weighting_function)
 
 
+@crazy
 def bilateral_filter(input_field: pystencils.Field,
                      output_field: pystencils.Field,
                      stencil,
@@ -44,6 +48,7 @@ def bilateral_filter(input_field: pystencils.Field,
     return generic_instationary_filter(input_field, output_field, stencil, weighting_function)
 
 
+@crazy
 def guided_bilateral_filter(input_field: pystencils.Field,
                             guide_field: pystencils.Field,
                             output_field: pystencils.Field,
@@ -59,6 +64,7 @@ def guided_bilateral_filter(input_field: pystencils.Field,
     return generic_guided_filter(input_field, guide_field, output_field, stencil, weighting_function)
 
 
+@crazy
 def generic_stationary_filter(input_field: pystencils.Field,
                               output_field: pystencils.Field,
                               stencil,
@@ -89,6 +95,7 @@ def generic_stationary_filter(input_field: pystencils.Field,
     return assignments
 
 
+@crazy
 def generic_instationary_filter(input_field: pystencils.Field,
                                 output_field: pystencils.Field,
                                 stencil,
@@ -123,6 +130,7 @@ def generic_instationary_filter(input_field: pystencils.Field,
     return assignments
 
 
+@crazy
 def generic_guided_filter(input_field: pystencils.Field,
                           guide_field: pystencils.Field,
                           output_field: pystencils.Field,
