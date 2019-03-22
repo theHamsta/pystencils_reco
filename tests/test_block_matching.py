@@ -11,7 +11,7 @@ from os.path import dirname, join
 
 import numpy as np
 import skimage.io
-from tqdm import tqdm, trange
+from tqdm import trange
 
 import pystencils
 import pystencils.gpucuda.cudajit
@@ -113,13 +113,12 @@ def test_combination_single_block_matching():
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
     offset = pystencils.typed_symbols('o:2', 'int32')
     i = pystencils.typed_symbols('i', 'int32')
-    assignments = []
     print(len(matching_stencil))
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     print('backward')
-    # backward = block_matching.backward().compile('gpu', ghost_layers=0)
-    # print('print')
-    # print(backward.code)
+    backward = block_matching.backward().compile('gpu', ghost_layers=0)
+    print('print')
+    print(backward.code)
 
 
 def test_for_each():
