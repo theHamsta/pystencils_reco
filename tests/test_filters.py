@@ -48,6 +48,9 @@ def test_mean_filter_with_crazy_compilation():
     assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
     kernel = assignments.compile('gpu')
     print(kernel.code)
+    kernel = assignments.compile('cpu')
+    if hasattr(kernel, 'code'):
+        print(kernel.code)
 
 
 def test_mean_filter_evaluation():
