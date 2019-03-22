@@ -13,8 +13,8 @@ from collections.abc import Iterable
 import sympy
 
 import pystencils
-from pystencils_reco import AssignmentCollection
-from pystencils_reco import crazy
+from pystencils_reco import AssignmentCollection, crazy
+
 
 @crazy
 def generic_spatial_matrix_transform(input_field, output_field, transform_matrix, inverse_matrix=None):
