@@ -15,9 +15,9 @@ from tqdm import tqdm, trange
 
 import pystencils
 import pystencils.gpucuda.cudajit
-from pystencils.astnodes import ForEach, KernelFunction, ForLoop
-from pystencils_reco.block_matching import (block_matching_integer_offsets,
-                                            single_block_matching)
+from pystencils.astnodes import ForEach
+from pystencils_reco.block_matching import (
+    block_matching_integer_offsets_unrolled, single_block_matching)
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
 try:
@@ -29,11 +29,11 @@ except:  # NOQA
 def test_block_matching():
     import pyconrad.autoinit
 
-    block_stencil = BallStencil(5, ndim=2)
-    matching_stencil = BallStencil(5, ndim=2)
+    block_stencil = BallStencil(3, ndim=2)
+    matching_stencil = BallStencil(3, ndim=2)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
-    block_matching = block_matching_integer_offsets(x, y, matches, block_stencil, matching_stencil)
+    block_matching = block_matching_integer_offsets_unrolled(x, y, matches, block_stencil, matching_stencil)
     print(block_matching)
     block_matching = block_matching.compile('cpu')
 
@@ -47,12 +47,12 @@ def test_block_matching():
 
 
 def test_larger_blocks():
-    block_stencil = BoxStencil(8, ndim=2)
-    matching_stencil = BallStencil(8, ndim=2)
+    block_stencil = BoxStencil(3, ndim=2)
+    matching_stencil = BallStencil(3, ndim=2)
 
     print('forward')
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
-    block_matching = block_matching_integer_offsets(x, y, matches, block_stencil, matching_stencil)
+    block_matching = block_matching_integer_offsets_unrolled(x, y, matches, block_stencil, matching_stencil)
     print(str(len(block_matching.all_assignments)) + " assignments")
     print('compile')
     _ = block_matching.compile('cpu')
@@ -75,9 +75,9 @@ def test_combination_single_block_matching():
     print(len(matching_stencil))
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     print('backward')
-    backward = block_matching.backward().compile('gpu', ghost_layers=0)
-    print('print')
-    print(backward.code)
+    # backward = block_matching.backward().compile('gpu', ghost_layers=0)
+    # print('print')
+    # print(backward.code)
 
 
 def test_for_each():
@@ -94,12 +94,13 @@ def test_for_each():
     kernel = pystencils.gpucuda.cudajit.make_python_function(ast)
     print(kernel.code)
 
+
 def test_for_each_3d():
-    block_stencil = BoxStencil(3, ndim=3)
-    matching_stencil = BallStencil(3, ndim=3)
+    block_stencil = BoxStencil(2, ndim=3)
+    matching_stencil = BallStencil(1, ndim=3)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[3d]' % len(matching_stencil))
-    offset = pystencils.typed_symbols('o:2', 'int32')
+    offset = pystencils.typed_symbols('o:3', 'int32')
     i = pystencils.typed_symbols('i', 'int32')
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
@@ -122,11 +123,11 @@ def test_block_matching_gpu():
     import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, zeros
 
-    block_stencil = BallStencil(5, ndim=2)
-    matching_stencil = BallStencil(5, ndim=2)
+    block_stencil = BallStencil(2, ndim=2)
+    matching_stencil = BallStencil(2, ndim=2)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
-    block_matching = block_matching_integer_offsets(x, y, matches, block_stencil, matching_stencil)
+    block_matching = block_matching_integer_offsets_unrolled(x, y, matches, block_stencil, matching_stencil)
     # print(block_matching)
     block_matching = block_matching.compile('gpu')
 
