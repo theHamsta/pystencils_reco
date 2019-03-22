@@ -41,6 +41,15 @@ def test_mean_filter_with_crazy():
     print(assignments)
 
 
+def test_mean_filter_with_crazy_compilation():
+    x = np.random.rand(20, 30)
+    y = np.zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    kernel = assignments.compile('gpu')
+    print(kernel.code)
+
+
 def test_mean_filter_evaluation():
     x, y = pystencils.fields('x,y: float32[2d]')
     x_array = np.random.rand(20, 23, 25).astype(np.float32)
