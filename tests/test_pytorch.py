@@ -7,8 +7,6 @@
 """
 
 """
-import torch
-
 import pystencils
 from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
