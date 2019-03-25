@@ -176,4 +176,9 @@ assignments = pystencils_reco.AssignmentCollection({
 print(assignments)
 print(consistency_value)
 
-print(assignments.compile('gpu').code)
+kernel = assignments.compile('gpu')
+print(kernel.code)
+
+# Call kernel: kernel(consval=..., sino_a=..., ...)
+# Array arguments must be pycuda.gpuarray.GpuArray!
+
