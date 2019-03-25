@@ -28,7 +28,6 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             subexpressions = [a for a in assignments if not isinstance(a.lhs, pystencils.Field.Access)]
             assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
             assignments = pystencils.simp.sympy_cse(assignments)
-            assignments.topological_sort()
         super(AssignmentCollection, self).__init__(assignments.all_assignments, {}, *args, **kwargs)
         self._autodiff = None
 
