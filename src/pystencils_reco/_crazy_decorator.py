@@ -28,15 +28,20 @@ except ImportError:
     tf = None
 
 
+class _WhatEverClass:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
 def _create_field_from_array_like(field_name, maybe_array):
 
     if torch:
         # Torch tensors don't have t.strides but t.stride(dim). Let's fix that!
         if isinstance(maybe_array, torch.Tensor):
-            fake_array = object()
-            fake_array.strides = [maybe_array.stride(i) for i in range(len(maybe_array.shape))]
-            fake_array.shape = maybe_array.shape
-            fake_array.dtype = torch_dtype_to_numpy(maybe_array.dtype)
+            fake_array = _WhatEverClass(
+                strides=[maybe_array.stride(i) for i in range(len(maybe_array.shape))],
+                shape=maybe_array.shape,
+                dtype=torch_dtype_to_numpy(maybe_array.dtype))
             field = Field.create_from_numpy_array(field_name, fake_array)
             return field
 
