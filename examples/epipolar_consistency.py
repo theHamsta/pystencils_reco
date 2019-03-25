@@ -61,14 +61,7 @@ tex_sino_b = TextureCachedField(sino_b)
 rScale, radon_width, offset_before_and_after, radon_height = sympy.symbols(
     "rScale, radon_width, offset_before_and_after, radon_heigth")
 
-a = pystencils.typed_symbols('p_a:12', 'float32')
-P_A = sympy.Matrix(3, 4, lambda i, j: a[i * 4 + j])
-b = pystencils.typed_symbols('p_b:12', 'float32')
-P_B = sympy.Matrix(3, 4, lambda i, j: b[i * 4 + j])
-a = pystencils.typed_symbols('s_a:12', 'float32')
-S_A = sympy.Matrix(3, 4, lambda i, j: a[i * 4 + j])
-b = pystencils.typed_symbols('s_b:12', 'float32')
-S_B = sympy.Matrix(3, 4, lambda i, j: b[i * 4 + j])
+P_A, P_B, S_A, S_B = pystencils.matrix_symbols("P_A, P_B, S_A, S_B", 'float32', 3, 4)
 
 cam_a, cam_b = P_A, P_B
 
@@ -181,4 +174,3 @@ print(kernel.code)
 
 # Call kernel: kernel(consval=..., sino_a=..., ...)
 # Array arguments must be pycuda.gpuarray.GpuArray!
-
