@@ -84,7 +84,7 @@ ortho_baseline_homo = Matrix([*ortho_baseline, 1])
 rotation_matrix = get_rotation_matrix(theta, baseline)
 print(rotation_matrix)
 
-ep_point_dir = rotation_matrix@ortho_baseline_homo
+ep_point_dir = rotation_matrix @ ortho_baseline_homo
 
 ep_point = sp_b + ep_point_dir
 
@@ -101,7 +101,7 @@ t = x1 * z2 - z1 * x2
 u = x1 * y2 - y1 * x2
 
 pluecker_line = Matrix([[0, p, -q, r], [-p, 0, s, -t], [q, -s, 0, u], [-r, t, -u, 0]])
-epipolar_plane = sp_a.T@pluecker_line
+epipolar_plane = sp_a.T @ pluecker_line
 plane_infinity = sympy.Matrix([0, 0, 0, 1])
 
 
@@ -169,7 +169,7 @@ assignments = pystencils_reco.AssignmentCollection({
     tex_v_a: v_a,
     tex_u_b: u_b,
     tex_v_b: v_b,
-    theta: sympy.pi * ((pystencils.x + 1) / (consval.spatial_shape[0] + 1)),
+    theta: sympy.pi * ((pystencils.x + 1) / (consval.spatial_shape[0] + 2)),
     consval.center(): consistency_value
 }, perform_cse=True
 )
