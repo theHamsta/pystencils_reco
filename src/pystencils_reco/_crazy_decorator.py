@@ -15,11 +15,15 @@ from pystencils.field import Field
 
 try:
     import torch
+except ModuleNotFoundError:
+    torch = None
 except ImportError:
     torch = None
 
 try:
     import tensorflow as tf
+except ModuleNotFoundError:
+    tf = None
 except ImportError:
     tf = None
 
