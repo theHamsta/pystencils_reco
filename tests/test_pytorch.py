@@ -9,25 +9,37 @@
 """
 import pystencils
 from pystencils.autodiff import torch_tensor_from_field
-from pystencils_reco.block_matching import block_matching_integer_offsets
+from pystencils_reco.filters import mean_filter
 from pystencils_reco.stencils import BallStencil
 
 
 def test_pytorch():
     block_stencil = BallStencil(1, ndim=2)
-    #
-    matching_stencil = BallStencil(1, ndim=2)
 
-    x, y, matches = pystencils.fields('x,y, matches(%i): float32[100,100]' % len(matching_stencil))
-    block_matching = block_matching_integer_offsets(x, y, matches, block_stencil, matching_stencil)
-    print(block_matching)
-    print(block_matching.backward())
+    x, y = pystencils.fields('x,y: float32[100,100]')
+    filter = mean_filter(x, y, block_stencil)
+    print(filter)
+    print(filter.backward())
 
-    x_tensor = torch_tensor_from_field(x, requires_grad=True)
-    y_tensor = torch_tensor_from_field(y)
-    matches_tensor = torch_tensor_from_field(matches)
+    x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=False)
+    y_tensor = torch_tensor_from_field(y, cuda=False)
 
-    torch_op = block_matching.create_pytorch_op(x=x_tensor+1, y=y_tensor, matches=matches_tensor)
+    torch_op = filter.create_pytorch_op(x=x_tensor+1, y=y_tensor)
+    print(torch_op)
+
+
+def test_pytorch_gpu():
+    block_stencil = BallStencil(1, ndim=2)
+
+    x, y = pystencils.fields('x,y: float32[100,100]')
+    filter = mean_filter(x, y, block_stencil)
+    print(filter)
+    print(filter.backward())
+
+    x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=True)
+    y_tensor = torch_tensor_from_field(y, cuda=True)
+
+    torch_op = filter.create_pytorch_op(x=x_tensor+1, y=y_tensor)
     print(torch_op)
 
 

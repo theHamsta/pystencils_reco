@@ -22,8 +22,9 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     def __init__(self, assignments, perform_cse=True, *args, **kwargs):
         if isinstance(assignments, pystencils.AssignmentCollection):
             assignments = assignments.all_assignments
+
+        assignments = pystencils.AssignmentCollection(assignments, {})
         if perform_cse:
-            assignments = pystencils.AssignmentCollection(assignments, {})
             main_assignments = [a for a in assignments if isinstance(a.lhs, pystencils.Field.Access)]
             subexpressions = [a for a in assignments if not isinstance(a.lhs, pystencils.Field.Access)]
             assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
@@ -55,7 +56,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         if not self._autodiff:
             self._create_autodiff(constant_fields)
 
-        return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch')
+        return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch_native')
 
     def _create_autodiff(self, constant_fields=[]):
         self._autodiff = pystencils.autodiff.AutoDiffOp(
