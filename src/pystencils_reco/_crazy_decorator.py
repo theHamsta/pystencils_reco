@@ -66,9 +66,5 @@ def crazy(function):
                 return assignments.create_pytorch_op(**kwargs)
 
         return assignments
-        # if torch:
-        # is_torch = any(isinstance(a, torch.Tensor) for a in chain(args, kwargs.values()))
-        # if is_torch:
-        # pass
 
     return wrapper
