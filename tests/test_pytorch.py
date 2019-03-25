@@ -49,11 +49,8 @@ def test_pytorch_from_tensors():
     x, y = pystencils.fields('x,y: float32[100,100]')
     x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=False)
     y_tensor = torch_tensor_from_field(y, cuda=False)
-    filter = mean_filter(x_tensor, y_tensor, block_stencil)
-    print(filter)
-    print(filter.backward())
+    torch_op = mean_filter(x_tensor, y_tensor, block_stencil)
 
-    torch_op = filter.create_pytorch_op(input_field=x_tensor+1, output_field=y_tensor)
     print(torch_op)
 
 

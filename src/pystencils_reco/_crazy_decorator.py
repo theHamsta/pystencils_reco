@@ -59,6 +59,12 @@ def crazy(function):
 
         assignments = function(*compile_args, **compile_kwargs)
 
+        if torch:
+            is_torch = all(isinstance(a, torch.Tensor) if hasattr(a, '__array__') else a for a in args)
+            if is_torch:
+                kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
+                return assignments.create_pytorch_op(**kwargs)
+
         return assignments
         # if torch:
         # is_torch = any(isinstance(a, torch.Tensor) for a in chain(args, kwargs.values()))
