@@ -23,8 +23,13 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         if isinstance(assignments, pystencils.AssignmentCollection):
             assignments = assignments.all_assignments
         if perform_cse:
-            assignments = pystencils.simp.sympy_cse(pystencils.AssignmentCollection(assignments, {})).all_assignments
-        super(AssignmentCollection, self).__init__(assignments, {}, *args, **kwargs)
+            assignments = pystencils.AssignmentCollection(assignments, {})
+            main_assignments = [a for a in assignments if isinstance(a.lhs, pystencils.Field.Access)]
+            subexpressions = [a for a in assignments if not isinstance(a.lhs, pystencils.Field.Access)]
+            assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
+            assignments = pystencils.simp.sympy_cse(assignments)
+            assignments.topological_sort()
+        super(AssignmentCollection, self).__init__(assignments.all_assignments, {}, *args, **kwargs)
         self._autodiff = None
 
     def compile(self, target='cpu', *args, **kwargs):
