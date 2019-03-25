@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright © 2019 seitz_local <seitz_local@lmeXX>
-#
 # Distributed under terms of the GPLv3 license.
 
 """
@@ -119,10 +117,8 @@ r = -(a1 * d2 - a2 * d1)
 
 ep_line_infinty = Matrix([[0, -u, -t, -s], [u, 0, -r, -q], [t, r, 0, -p], [s, q, p, 0]])
 
-ep_line_a = cam_a@ep_line_infinty@cam_a.T
-ep_line_b = cam_b@ep_line_infinty@cam_b.T
-
-# line a
+ep_line_a = cam_a @ ep_line_infinty @ cam_a.T
+ep_line_b = cam_b @ ep_line_infinty @ cam_b.T
 
 ep_line_a_x = -ep_line_a[0]
 ep_line_a_y = ep_line_a[1]
