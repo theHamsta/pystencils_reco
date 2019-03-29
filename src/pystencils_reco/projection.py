@@ -8,6 +8,7 @@
 Implements a generic forward and backprojection projections
 """
 
+# import islpy as isl
 import sympy
 
 import pystencils
@@ -48,7 +49,8 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     conditions = pystencils_reco._geometry.coordinate_in_field_conditions(
         input_volume_field, ray_equations)
 
-    central_ray = sympy.Matrix(projection_matrix.nullspace()[0][:input_volume_field.spatial_dimensions])
+    central_ray = sympy.Matrix(
+        projection_matrix.nullspace()[0][:input_volume_field.spatial_dimensions])
     central_ray /= central_ray.norm()
 
     intersection_candidates = []
@@ -65,6 +67,16 @@ def forward_projection(input_volume_field, output_projections_field, projection_
                                             for f in reversed(intersection_candidates)], (-0, True))
     assert intersection_point1 != intersection_point2, \
         "The intersection are unconditionally equal, reconstruction volume is not in detector FOV!"
+
+    # perform a integer set analysis here?
+    # space = isl.Space.create_from_names(isl.DEFAULT_CONTEXT, set=[str(t) for t in texture_coordinates])
+    # ray_set = isl.BasicSet.universe(space)
+    # for i, t in enumerate(texture_coordinates):
+    #    # dafaq?
+    #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space, {str(texture_coordinates): 1}))
+    #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space,
+    #                                                        # {1: -input_volume_field.shape[i], str(texture_coordinates): -1}))
+    #    ray_set.add_constraint(isl.Constraint.eq_from_name(space, ray_equations[i].subs({ #TODO
 
     min_t = sympy.Min(intersection_point1, intersection_point2)
     max_t = sympy.Max(intersection_point1, intersection_point2)
@@ -87,8 +99,8 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / (step_size / projection_vector_norm)),
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
-        intensity_weighting: projection_vector.dot(central_ray) ** 2,
-        output_projections_field.center(): line_integral * step_size * intensity_weighting
+        intensity_weighting: (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2,
+        output_projections_field.center():  (line_integral * step_size * intensity_weighting)
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     })
 
