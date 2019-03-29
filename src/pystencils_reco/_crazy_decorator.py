@@ -10,6 +10,8 @@
 
 import inspect
 
+import sympy
+
 from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
 from pystencils.field import Field
 
@@ -52,15 +54,17 @@ def crazy(function):
 
     def wrapper(*args, **kwargs):
         arg_names = inspect.getfullargspec(function).args
-        compile_args = [_create_field_from_array_like(
-            arg_names[i], a) if hasattr(a, '__array__') else a for i, a in enumerate(args)]
+        compile_args = [_create_field_from_array_like(arg_names[i], a)
+                        if hasattr(a, '__array__') and not isinstance(a, sympy.Matrix)
+                        else a for i, a in enumerate(args)]
         compile_kwargs = {k: _create_field_from_array_like(str(k), a) if hasattr(
             a, '__array__') else a for (k, a) in kwargs.items()}
 
         assignments = function(*compile_args, **compile_kwargs)
 
         if torch:
-            is_torch = all(isinstance(a, torch.Tensor) if hasattr(a, '__array__') else a for a in args)
+            is_torch = all(isinstance(a, torch.Tensor) if hasattr(a, '__array__')
+                           or isinstance(a, Field) else a for a in args)
             if is_torch:
                 kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
                 return assignments.create_pytorch_op(**kwargs)
