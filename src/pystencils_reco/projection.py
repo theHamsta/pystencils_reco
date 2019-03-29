@@ -88,7 +88,7 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
         intensity_weighting: projection_vector.dot(central_ray) ** 2,
-        output_projections_field.center(): (line_integral * step_size * intensity_weighting)
+        output_projections_field.center(): line_integral * step_size * intensity_weighting
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     })
 
