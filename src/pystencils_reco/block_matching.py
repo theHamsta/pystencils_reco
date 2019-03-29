@@ -13,7 +13,7 @@ from tqdm import tqdm
 import pystencils
 import pystencils_reco.functions
 from pystencils import Field
-from pystencils.astnodes import ForEach
+from pystencils.astnodes import ForEach, Select, cast_func
 from pystencils_reco import AssignmentCollection, crazy
 
 
@@ -36,7 +36,7 @@ def block_matching_integer_offsets_unrolled(input_field: Field,
         rhs = []
 
         for s in block_stencil:
-            shifted = tuple(i+j for i, j in zip(s, m))
+            shifted = tuple(i + j for i, j in zip(s, m))
             rhs.append(matching_function(input_field[s], comparision_field[shifted]))
 
         lhs = output_block_scores(i)
@@ -98,12 +98,142 @@ def block_matching_integer_offsets(input_field: Field,
     return pystencils.make_python_function(ast, target=compilation_target)
 
 
-# @crazy
-# def collect_patches(block_scores: Field,
-    # patches: Field,
-    # block_stencil,
-    # matching_stencil,
-    # matching_function=pystencils_reco.functions.squared_difference):
+@crazy
+def collect_patches(block_scores: Field,
+                    patch_input_field: Field,
+                    destination_field: Field,
+                    block_stencil,
+                    matching_stencil,
+                    threshold,
+                    max_selected,
+                    compilation_target,
+                    **compilation_kwargs
+                    ):
+    max_offset = max(max(o) for o in matching_stencil)
+    max_offset += max(max(o) for o in block_stencil)
+
+    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
+    copies = []
+
+    assert destination_field.index_dimensions == 2
+    assert destination_field.index_shape[-1] == len(block_stencil)
+
+    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
+    for i, s in enumerate(block_stencil):
+        shifted = tuple(s + o for s, o in zip(offset, s))
+        copies.append(pystencils.Assignment(destination_field.center(nth_hit, i), patch_input_field[shifted]))
+
+    assignments = AssignmentCollection(copies)
+    ast = pystencils.create_kernel(assignments, target=compilation_target,
+                                   data_type=patch_input_field.dtype,
+                                   ghost_layers=max_offset,
+                                   **compilation_kwargs)
+    # TODO move select on per coordinate level
+    ast._body = Select(ast.body,
+                       what=offset,
+                       from_iterable=matching_stencil,
+                       predicate=block_scores.center(n) > threshold,
+                       counter_symbol=n,
+                       hit_counter_symbol=nth_hit,
+                       max_selected=max_selected,
+                       compilation_target=compilation_target)
+    return pystencils.make_python_function(ast, target=compilation_target)
+
+
+@crazy
+def aggregate(block_scores: Field,
+              patch_input_field: Field,
+              destination_field: Field,
+              block_stencil,
+              matching_stencil,
+              threshold,
+              max_selected,
+              compilation_target,
+              **compilation_kwargs):
+
+    max_offset = max(max(o) for o in matching_stencil)
+    max_offset += max(max(o) for o in block_stencil)
+
+    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
+    copies = []
+
+    assert destination_field.index_dimensions == 2
+    assert destination_field.index_shape[-1] == len(block_stencil)
+
+    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
+    for i, s in enumerate(block_stencil):
+        shifted = tuple(s + o for s, o in zip(offset, s))
+        #TODO make atomic
+        copies.append(pystencils.Assignment(patch_input_field[shifted],
+                                            patch_input_field[shifted] +
+                                            destination_field.center(nth_hit, i)))
+
+    assignments = AssignmentCollection(copies)
+    ast = pystencils.create_kernel(assignments, target=compilation_target,
+                                   data_type=patch_input_field.dtype,
+                                   ghost_layers=max_offset,
+                                   **compilation_kwargs)
+
+    ast._body = Select(ast.body,
+                       what=offset,
+                       from_iterable=matching_stencil,
+                       predicate=block_scores.center(n) > threshold,
+                       counter_symbol=n,
+                       hit_counter_symbol=nth_hit,
+                       compilation_target=compilation_target,
+                       max_selected=max_selected)
+    return pystencils.make_python_function(ast, target=compilation_target)
+
+
+@crazy
+def bm3d(input_field: Field,
+         output_field: Field,
+         block_stencil,
+         matching_stencil,
+         compilation_target,
+         max_block_matches,
+         threshold,
+         matching_function=pystencils_reco.functions.squared_difference,
+         **compilation_kwargs):
+
+    block_scores_shape = output_field.shape + (len(matching_stencil),)
+    block_scores = Field.create_fixed_size('block_scores',
+                                           block_scores_shape,
+                                           index_dimensions=1,
+                                           dtype=input_field.dtype.numpy_dtype)
+
+    block_matched_shape = input_field.shape + (max_block_matches, len(block_stencil))
+    block_matched_field = Field.create_fixed_size('block_matched',
+                                                  block_matched_shape,
+                                                  index_dimensions=2,
+                                                  dtype=input_field.dtype.numpy_dtype)
+
+    block_matching_integer_offsets(input_field,
+                                   input_field,
+                                   block_scores,
+                                   block_stencil,
+                                   matching_stencil,
+                                   compilation_target,
+                                   matching_function,
+                                   **compilation_kwargs)
+    print(collect_patches(block_scores,
+                          input_field,
+                          block_matched_field,
+                          block_stencil,
+                          matching_stencil,
+                          threshold,
+                          max_block_matches,
+                          compilation_target,
+                          **compilation_kwargs).code)
+    aggregate(block_scores,
+              input_field,
+              block_matched_field,
+              block_stencil,
+              matching_stencil,
+              threshold,
+              max_block_matches,
+              compilation_target,
+              **compilation_kwargs)
 
     # assert block_scores.index_dimensions == 1, \
     # "output_block_scores must have channels equal to the length of matching_stencil"
