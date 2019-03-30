@@ -59,6 +59,7 @@ def crazy(function):
                         else a for i, a in enumerate(args)]
         compile_kwargs = {k: _create_field_from_array_like(str(k), a) if hasattr(
             a, '__array__') else a for (k, a) in kwargs.items()}
+        # compile_kwargs['function_name'] = function.__name__
 
         assignments = function(*compile_args, **compile_kwargs)
 
