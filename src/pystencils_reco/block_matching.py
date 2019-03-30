@@ -186,55 +186,6 @@ def aggregate(block_scores: Field,
     return pystencils.make_python_function(ast, target=compilation_target)
 
 
-@crazy
-def bm3d(input_field: Field,
-         output_field: Field,
-         block_stencil,
-         matching_stencil,
-         compilation_target,
-         max_block_matches,
-         threshold,
-         matching_function=pystencils_reco.functions.squared_difference,
-         **compilation_kwargs):
-
-    block_scores_shape = output_field.shape + (len(matching_stencil),)
-    block_scores = Field.create_fixed_size('block_scores',
-                                           block_scores_shape,
-                                           index_dimensions=1,
-                                           dtype=input_field.dtype.numpy_dtype)
-
-    block_matched_shape = input_field.shape + (max_block_matches, len(block_stencil))
-    block_matched_field = Field.create_fixed_size('block_matched',
-                                                  block_matched_shape,
-                                                  index_dimensions=2,
-                                                  dtype=input_field.dtype.numpy_dtype)
-
-    block_matching_integer_offsets(input_field,
-                                   input_field,
-                                   block_scores,
-                                   block_stencil,
-                                   matching_stencil,
-                                   compilation_target,
-                                   matching_function,
-                                   **compilation_kwargs)
-    print(collect_patches(block_scores,
-                          input_field,
-                          block_matched_field,
-                          block_stencil,
-                          matching_stencil,
-                          threshold,
-                          max_block_matches,
-                          compilation_target,
-                          **compilation_kwargs).code)
-    print(aggregate(block_scores,
-                    input_field,
-                    block_matched_field,
-                    block_stencil,
-                    matching_stencil,
-                    threshold,
-                    max_block_matches,
-                    compilation_target,
-                    **compilation_kwargs).code)
 
     # assert block_scores.index_dimensions == 1, \
     # "output_block_scores must have channels equal to the length of matching_stencil"

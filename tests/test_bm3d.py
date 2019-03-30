@@ -20,18 +20,8 @@ from os.path import dirname, join
 import numpy as np
 import skimage.io
 
-from pystencils_reco.block_matching import aggregate, bm3d, collect_patches
+from pystencils_reco.bm3d import Bm3d
 from pystencils_reco.stencils import BallStencil, BoxStencil
-
-# def bm3d(input_field: Field,
-# output_field: Field,
-# block_stencil,
-# matching_stencil,
-# compilation_target,
-# max_block_matches,
-# threshold,
-# matching_function=pystencils_reco.functions.squared_difference,
-# **compilation_kwargs):
 
 
 def test_bm3d():
@@ -44,7 +34,7 @@ def test_bm3d():
 
     pyconrad.imshow(lenna, 'lenna')
     pyconrad.imshow(lenna_noisy, 'lenna_noisy')
-    kernels = bm3d(lenna_noisy,
+    bm3d = Bm3d(lenna_noisy,
                    lenna_denoised,
                    BoxStencil(4, ndim),
                    BallStencil(2, ndim),
