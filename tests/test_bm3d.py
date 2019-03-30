@@ -10,6 +10,7 @@
 
 try:
     import pyconrad.autoinit
+    raise NotImplementedError()
 except:  # NOQA
     import unittest.mock
     pyconrad = unittest.mock.MagicMock()
@@ -19,7 +20,7 @@ from os.path import dirname, join
 import numpy as np
 import pycuda.autoinit  # noqa
 import skimage.io
-from pycuda.gpuarray import to_gpu, zeros, zeros_like
+from pycuda.gpuarray import to_gpu, zeros
 
 from pystencils_reco.bm3d import Bm3d
 from pystencils_reco.stencils import BallStencil, BoxStencil
@@ -33,6 +34,7 @@ def test_bm3d():
     lenna_denoised = np.zeros_like(lenna)
     ndim = 2
 
+    global pyconrad
     pyconrad.imshow(lenna, 'lenna')
     pyconrad.imshow(lenna_noisy, 'lenna_noisy')
     lenna = to_gpu(lenna)
@@ -60,8 +62,38 @@ def test_bm3d():
     bm3d.collect_patches(block_scores=block_scores, block_matched=block_matched)
     pyconrad.imshow(block_matched, 'block_matched')
 
-    bm3d.aggregate(block_scores=block_scores, block_matched=block_matched)
-    pyconrad.imshow(lenna_noisy, 'denoised')
+    print(block_matched.shape)
+    # fft[...] = block_matched
+
+    # reikna.fft.FFT(fft, (-3, -2, -1))
+    # pyconrad.imshow(fft, 'FFT')
+    import skcuda.fft as cufft
+    # forward_plan = cufft.cufftPlan3d(8, 4, 4, cufft.CUFFT_R2C)
+
+    plan = cufft.Plan((8, 4, 4), np.complex64, np.complex64, 512*512)
+    # forward_plan = cufft.cufftPlanMany(3, [8, 4, 4],
+    # 0, 0, 0,
+    # 0, 0, 0, cufft.CUFFT_R2C, 512*512)
+    # backward_plan = cufft.cufftPlanMany(3, [8, 4, 4],
+    # 0, 0, 0,
+    # 0, 0, 0, cufft.CUFFT_C2R, 512*512)
+
+    block_matched = block_matched.astype(np.complex64)
+    reshaped = pycuda.gpuarray.reshape(block_matched, (512*512, 8, 4, 4))
+    cufft.fft(reshaped, reshaped, plan)
+    pyconrad.imshow(reshaped, 'FFT')
+    print('fft')
+
+    cufft.ifft(reshaped, reshaped, plan, scale=True)
+    pyconrad.imshow(reshaped, 'iFFT')
+    print('ifft')
+
+    reshaped = pycuda.gpuarray.reshape(reshaped.real, (512, 512, 8, 16))
+
+    import pyconrad
+    pyconrad.imshow(lenna_denoised, 'aoo')
+    bm3d.aggregate(block_scores=block_scores, block_matched=reshaped)
+    pyconrad.imshow(lenna_denoised, 'denoised')
 
 
 def main():
