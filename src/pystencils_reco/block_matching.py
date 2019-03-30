@@ -7,13 +7,15 @@
 """
 
 """
+import uuid
+
 import sympy
 from tqdm import tqdm
 
 import pystencils
 import pystencils_reco.functions
 from pystencils import Field
-from pystencils.astnodes import ForEach, Select, cast_func
+from pystencils.astnodes import ForEach, Select, address_of
 from pystencils_reco import AssignmentCollection, crazy
 
 
@@ -163,10 +165,9 @@ def aggregate(block_scores: Field,
     n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
     for i, s in enumerate(block_stencil):
         shifted = tuple(s + o for s, o in zip(offset, s))
-        #TODO make atomic
-        copies.append(pystencils.Assignment(patch_input_field[shifted],
-                                            patch_input_field[shifted] +
-                                            destination_field.center(nth_hit, i)))
+        copies.append(pystencils.Assignment(pystencils.typed_symbols('dummy%s' % uuid.uuid4().hex, 'bool'),
+                                            sympy.Function('atomicAdd')(address_of(patch_input_field[shifted]),
+                                                                        destination_field.center(nth_hit, i))))
 
     assignments = AssignmentCollection(copies)
     ast = pystencils.create_kernel(assignments, target=compilation_target,
@@ -225,15 +226,15 @@ def bm3d(input_field: Field,
                           max_block_matches,
                           compilation_target,
                           **compilation_kwargs).code)
-    aggregate(block_scores,
-              input_field,
-              block_matched_field,
-              block_stencil,
-              matching_stencil,
-              threshold,
-              max_block_matches,
-              compilation_target,
-              **compilation_kwargs)
+    print(aggregate(block_scores,
+                    input_field,
+                    block_matched_field,
+                    block_stencil,
+                    matching_stencil,
+                    threshold,
+                    max_block_matches,
+                    compilation_target,
+                    **compilation_kwargs).code)
 
     # assert block_scores.index_dimensions == 1, \
     # "output_block_scores must have channels equal to the length of matching_stencil"
