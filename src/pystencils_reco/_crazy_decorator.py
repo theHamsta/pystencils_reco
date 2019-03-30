@@ -9,9 +9,15 @@
 """
 
 import inspect
+import types
+from functools import partial
+from itertools import chain
 
+import pycuda.gpuarray
 import sympy
 
+import pystencils
+import pystencils_reco
 from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
 from pystencils.field import Field
 
@@ -50,26 +56,56 @@ def _create_field_from_array_like(field_name, maybe_array):
     return Field.create_from_numpy_array(field_name, maybe_array)
 
 
+def coerce_to_field(field_name, array_like):
+    if isinstance(array_like, Field):
+        return array_like.new_field_with_different_name(field_name, array_like)
+    return _create_field_from_array_like(field_name, array_like)
+
+
 def crazy(function):
 
     def wrapper(*args, **kwargs):
         arg_names = inspect.getfullargspec(function).args
         compile_args = [_create_field_from_array_like(arg_names[i], a)
-                        if hasattr(a, '__array__') and not isinstance(a, sympy.Matrix)
+                        if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)  # noqa
                         else a for i, a in enumerate(args)]
-        compile_kwargs = {k: _create_field_from_array_like(str(k), a) if hasattr(
-            a, '__array__') else a for (k, a) in kwargs.items()}
+        compile_kwargs = {k: _create_field_from_array_like(str(k), a)
+                          if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)  # noqa
+                          else a for (k, a) in kwargs.items()}
         # compile_kwargs['function_name'] = function.__name__
 
         assignments = function(*compile_args, **compile_kwargs)
 
+        kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
         if torch:
             is_torch = all(isinstance(a, torch.Tensor) if hasattr(a, '__array__')
-                           or isinstance(a, Field) else a for a in args)
+                           or isinstance(a, Field) and not isinstance(a, sympy.Matrix) else a for a in args)
             if is_torch:
-                kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
                 return assignments.create_pytorch_op(**kwargs)
 
+        assignments.kwargs = kwargs
+
+        if isinstance(assignments, types.FunctionType):
+            if hasattr(assignments, 'code'):
+                code = assignments.code
+            else:
+                code = ''
+            assignments = partial(assignments, **kwargs)
+            if code:
+                assignments.code = code
+
         return assignments
+
+        # if isinstance(assignments, pystencils.AssignmentCollection):
+        # assignments = pystencils_reco.AssignmentCollection(assignments)
+        # is_gpu = any(isinstance(a, pycuda.gpuarray.GPUArray) for a in chain(args, kwargs.values()))
+        # kernel = assignments.compile(target='gpu' if is_gpu else 'cpu') # TODO: make accept: function_name=function.__name__
+        # else:
+        # kernel = assignments
+        # kernel_with_args = partial(kernel, *args, **kwargs)
+        # if hasattr(kernel, 'code'):
+        # kernel_with_args.code = kernel.code
+        # kernel_with_args.assignments = assignments
+        # return kernel_with_args
 
     return wrapper

@@ -8,11 +8,14 @@
 
 """
 
+from functools import partial
+
 import pystencils.assignment_collection
 import pystencils.autodiff
 
-
 # TODO: find good name to differentiate from conventional pystencils.AssignmentCollection... Perhaps ImageFilter?
+
+
 class AssignmentCollection(pystencils.AssignmentCollection):
     """
     A high-level wrapper around pystencils.AssignmentCollection that provides some convenience methods
@@ -36,13 +39,21 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         """Convenience wrapper for pystencils.create_kernel(...).compile()
         See :func: ~pystencils.create_kernel
         """
+
         if 'data_type' not in kwargs:
             kwargs['data_type'] = 'float32'
 
         if 'cpu_openmp' not in kwargs:
             kwargs['cpu_openmp'] = True
 
-        return pystencils.create_kernel(self, target, *args, **kwargs).compile()
+        kernel = pystencils.create_kernel(self, target, *args, **kwargs).compile()
+        if hasattr(self, 'args'):
+            kernel = partial(kernel, *self.args)
+
+        if hasattr(self, 'kwargs'):
+            kernel = partial(kernel, **self.kwargs)
+
+        return kernel
 
     def backward(self):
         if not self._autodiff:
