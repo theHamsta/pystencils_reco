@@ -17,9 +17,9 @@ from pystencils_reco.block_matching import (aggregate,
 
 class Bm3d:
     """docstring for Bm3d"""
-    @crazy
-    def __init__(self, input_field: Field,
-                 output_field: Field,
+
+    def __init__(self, input: Field,
+                 output: Field,
                  block_stencil,
                  matching_stencil,
                  compilation_target,
@@ -27,6 +27,10 @@ class Bm3d:
                  threshold,
                  matching_function=pystencils_reco.functions.squared_difference,
                  **compilation_kwargs):
+
+        input_field = pystencils_reco._crazy_decorator.coerce_to_field('input_field', input)
+        output_field = pystencils_reco._crazy_decorator.coerce_to_field('output_field', output)
+
         block_scores_shape = output_field.shape + (len(matching_stencil),)
         block_scores = Field.create_fixed_size('block_scores',
                                                block_scores_shape,
@@ -41,8 +45,8 @@ class Bm3d:
                                                       dtype=input_field.dtype.numpy_dtype)
         self.block_matched_field = block_matched_field
 
-        self.block_matching = block_matching_integer_offsets(input_field,
-                                                             input_field,
+        self.block_matching = block_matching_integer_offsets(input,
+                                                             input,
                                                              block_scores,
                                                              block_stencil,
                                                              matching_stencil,
@@ -50,7 +54,7 @@ class Bm3d:
                                                              matching_function,
                                                              **compilation_kwargs)
         self.collect_patches = collect_patches(block_scores,
-                                               input_field,
+                                               input,
                                                block_matched_field,
                                                block_stencil,
                                                matching_stencil,
@@ -59,7 +63,7 @@ class Bm3d:
                                                compilation_target,
                                                **compilation_kwargs)
         self.aggregate = aggregate(block_scores,
-                                   input_field,
+                                   output,
                                    block_matched_field,
                                    block_stencil,
                                    matching_stencil,
