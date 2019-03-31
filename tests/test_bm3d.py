@@ -22,6 +22,8 @@ import pycuda.autoinit  # noqa
 import skimage.io
 from pycuda.gpuarray import to_gpu, zeros
 
+import pystencils
+import pystencils_reco
 from pystencils_reco.bm3d import Bm3d
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
@@ -47,9 +49,12 @@ def test_bm3d():
                 BallStencil(2, ndim),
                 compilation_target='gpu',
                 max_block_matches=8,
-                threshold=0.1)
+                blockmatching_threshold=10,
+                hard_threshold=4,
+                wiener_sigma=1)
 
     block_scores = zeros(bm3d.block_scores.shape, bm3d.block_scores.dtype.numpy_dtype)
+    weights = zeros(bm3d.block_scores.shape, bm3d.block_scores.dtype.numpy_dtype)
     block_matched = zeros(bm3d.block_matched_field.shape, bm3d.block_matched_field.dtype.numpy_dtype)
 
     print(bm3d.block_matching.code)
@@ -84,6 +89,10 @@ def test_bm3d():
     pyconrad.imshow(reshaped, 'FFT')
     print('fft')
 
+    real_shaped = pycuda.gpuarray.reshape(block_matched.view(np.float32), bm3d.complex_field.shape)
+    bm3d.hard_thresholding(complex_field=real_shaped, group_weights=weights)
+    bm3d.wiener_filtering(complex_field=real_shaped, group_weights=weights)
+
     cufft.ifft(reshaped, reshaped, plan, scale=True)
     pyconrad.imshow(reshaped, 'iFFT')
     print('ifft')
@@ -91,7 +100,6 @@ def test_bm3d():
     reshaped = pycuda.gpuarray.reshape(reshaped.real, (512, 512, 8, 16))
 
     import pyconrad
-    pyconrad.imshow(lenna_denoised, 'aoo')
     bm3d.aggregate(block_scores=block_scores, block_matched=reshaped)
     pyconrad.imshow(lenna_denoised, 'denoised')
 
