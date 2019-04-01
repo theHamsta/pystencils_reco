@@ -13,7 +13,9 @@ from collections.abc import Iterable
 import sympy
 
 import pystencils
+from pystencils.autodiff import AdjointField
 from pystencils_reco import AssignmentCollection, crazy
+import types
 
 
 @crazy
@@ -23,13 +25,28 @@ def generic_spatial_matrix_transform(input_field, output_field, transform_matrix
     if inverse_matrix is None:
         inverse_matrix = transform_matrix.inv()
 
+    # output_coordinate = input_field.coordinate_transform.inv() @ (
+        # inverse_matrix @ output_field.physical_coordinates_staggered) - input_field.coordinate_origin
+    output_coordinate = input_field.physical_to_index(
+        inverse_matrix @ output_field.physical_coordinates_staggered, staggered=False)
+
     assignments = AssignmentCollection({
         output_field.center():
-        texture.at(input_field.coordinate_transform.inv() @
-                   (inverse_matrix @ output_field.physical_coordinates_staggered) - input_field.coordinate_origin)
+        texture.at(output_coordinate)
     })
-    assignments.transform_matrix = transform_matrix
 
+    def create_autodiff(self, constant_fields=None):
+        assignments.transform_matrix = transform_matrix
+
+        texture = pystencils.astnodes.TextureCachedField(AdjointField(output_field))
+        output_coordinate = output_field.physical_to_index(
+            transform_matrix @ input_field.physical_coordinates_staggered, staggered=True)
+        backward_assignments = AssignmentCollection({
+            AdjointField(input_field).center(): texture.at(output_coordinate)
+        })
+        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+
+    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
     return assignments
 
 
@@ -54,7 +71,7 @@ def scale_transform(input_field, output_field, scaling_factor):
 def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=None):
     if input_field.spatial_dimensions == 3:
         assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
-        transform_matrix = getattr(sympy, 'rot_axis%i' % (rotation_axis+1))(rotation_angle)
+        transform_matrix = getattr(sympy, 'rot_axis%i' % (rotation_axis + 1))(rotation_angle)
     elif input_field.spatial_dimensions == 2:
         # 2d rotation is 3d rotation around 3rd axis
         transform_matrix = sympy.rot_axis3(rotation_angle)[:2, :2]

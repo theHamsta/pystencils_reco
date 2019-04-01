@@ -8,6 +8,7 @@
 
 """
 import pystencils
+import pystencils_reco.resampling
 from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.stencils import BallStencil
@@ -54,9 +55,22 @@ def test_pytorch_from_tensors():
     print(torch_op)
 
 
+def test_texture():
+
+    x, y = pystencils.fields('x,y: float32[100,100]')
+    assignments = pystencils_reco.resampling.scale_transform(x, y, 2)
+
+    x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=True)
+    y_tensor = torch_tensor_from_field(y, cuda=True)
+    kernel = assignments.create_pytorch_op(x=x_tensor, y=y_tensor)
+    print(assignments)
+    print(kernel)
+
+
 def main():
     # test_pytorch()
-    test_pytorch_from_tensors()
+    # test_pytorch_from_tensors()
+    test_texture()
 
 
 if __name__ == '__main__':

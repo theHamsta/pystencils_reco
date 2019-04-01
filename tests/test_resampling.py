@@ -21,7 +21,7 @@ from pystencils_reco.resampling import rotation_transform, scale_transform
 def test_scaling():
 
     for ndim in range(1, 5):
-        for scale in (0.5, [(s+1)*0.1 for s in range(ndim)]):
+        for scale in (0.5, [(s + 1) * 0.1 for s in range(ndim)]):
             x, y = pystencils.fields('x,y: float32[%id]' % ndim)
             transform = scale_transform(x, y, scale)
             print(transform)
@@ -40,7 +40,7 @@ def test_rotation():
 def test_scaling_compilation():
 
     for ndim in range(1, 4):
-        for scale in (0.5, [(s+1)*0.1 for s in range(ndim)]):
+        for scale in (0.5, [(s + 1) * 0.1 for s in range(ndim)]):
             x, y = pystencils.fields('x,y: float32[%id]' % ndim)
             scale_transform(x, y, scale).compile('gpu')
 
@@ -63,7 +63,7 @@ def test_scaling_visualize():
     s = pystencils.data_types.TypedSymbol('s', 'float32')
     transform = scale_transform(x, y, s).compile('gpu')
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
     tmp = zeros_like(test_image)
@@ -82,11 +82,10 @@ def test_rotation_visualize():
     s = pystencils.data_types.TypedSymbol('s', 'float32')
     transform = rotation_transform(x, y, s).compile('gpu')
 
-    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
     tmp = zeros_like(test_image)
-    print(transform.code)
 
     for s in (0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
@@ -98,7 +97,7 @@ def test_rotation_around_center_visualize():
     import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
 
-    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
 
@@ -109,7 +108,6 @@ def test_rotation_around_center_visualize():
     print(x.coordinate_origin)
     s = pystencils.data_types.TypedSymbol('s', 'float32')
     transform = rotation_transform(x, y, s).compile('gpu')
-    print(transform.code)
 
     for s in (0, 0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
