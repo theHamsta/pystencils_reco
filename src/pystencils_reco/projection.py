@@ -8,12 +8,14 @@
 Implements a generic forward and backprojection projections
 """
 
-# import islpy as isl
+import types
+
 import sympy
 
 import pystencils
 import pystencils.astnodes
 import pystencils_reco._geometry
+from pystencils.autodiff import AdjointField
 from pystencils_reco import crazy
 
 
@@ -104,6 +106,15 @@ def forward_projection(input_volume_field, output_projections_field, projection_
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     })
 
+    def create_autodiff(self, constant_fields=None):
+        backward_assignments = backward_projection(AdjointField(output_projections_field),
+                                                   AdjointField(input_volume_field),
+                                                   projection_matrix,
+                                                   1)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+
+    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+
     return assignments
 
 
@@ -111,7 +122,12 @@ def forward_projection(input_volume_field, output_projections_field, projection_
 def backward_projection(input_projection, output_volume, projection_matrix, normalization):
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
     assignments = pystencils_reco.resampling.generic_spatial_matrix_transform(
-        input_projection, output_volume, None, inverse_matrix=projection_matrix)
-    normalized_assignments = [a / normalization for a in assignments.all_assignments]
+        input_projection,
+        output_volume,
+        None,
+        inverse_matrix=projection_matrix)
 
-    return pystencils_reco.AssignmentCollection(normalized_assignments)
+    for a in assignments.all_assignments:
+        a = pystencils.Assignment(a.lhs, a.rhs / normalization)
+
+    return assignments

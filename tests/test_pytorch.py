@@ -7,10 +7,13 @@
 """
 
 """
+import sympy
+
 import pystencils
 import pystencils_reco.resampling
 from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
+from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil
 
 
@@ -67,10 +70,29 @@ def test_texture():
     print(kernel)
 
 
+def test_projection():
+
+    volume = pystencils.fields('volume: float32[100,200,300]')
+    projections = pystencils.fields('projections: float32[600,500]')
+
+    projection_matrix = sympy.Matrix([[-289.0098977737411, -1205.2274801832275, 0.0, 186000.0],
+                                      [-239.9634468375339, - 4.188577544948043, 1200.0, 144000.0],
+                                      [-0.9998476951563913, -0.01745240643728351, 0.0, 600.0]])
+
+    assignments = forward_projection(volume, projections, projection_matrix)
+
+    x_tensor = torch_tensor_from_field(volume, requires_grad=True, cuda=True)
+    y_tensor = torch_tensor_from_field(projections, cuda=True)
+    kernel = assignments.create_pytorch_op(volume=x_tensor, projections=y_tensor)
+    print(assignments)
+    print(kernel)
+
+
 def main():
     # test_pytorch()
     # test_pytorch_from_tensors()
-    test_texture()
+    # test_texture()
+    test_projection()
 
 
 if __name__ == '__main__':
