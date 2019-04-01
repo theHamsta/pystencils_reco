@@ -22,8 +22,6 @@ import pycuda.autoinit  # noqa
 import skimage.io
 from pycuda.gpuarray import to_gpu, zeros
 
-import pystencils
-import pystencils_reco
 from pystencils_reco.bm3d import Bm3d
 from pystencils_reco.stencils import BallStencil, BoxStencil
 

@@ -80,6 +80,57 @@ def _wiener_filtering(complex_field: Field, output_weight_field: Field, sigma):
     return pystencils_reco.AssignmentCollection(assignments)
 
 
+@crazy
+def _apply_wieners(complex_field: Field, wieners: Field, output_weight_field: Field):
+    assert complex_field.index_dimensions == 3
+    assert wieners.index_dimensions == 2
+    assert output_weight_field.index_dimensions == 1
+
+    assignments = []
+    wiener_sum = []
+
+    for stack_index in range(complex_field.index_shape[0]):
+        for patch_index in range(complex_field.index_shape[1]):
+
+            wien = wieners(stack_index, patch_index)
+
+            wiener_sum.append(wien**2)
+
+            assignments.extend(
+                pystencils.Assignment(complex_field.center(stack_index, patch_index, i),
+                                      complex_field.center(stack_index, patch_index, i) * wien)
+                for i in (0, 1)
+            )
+
+        assignments.append(pystencils.Assignment(
+            output_weight_field.center(stack_index), 1 / sympy.Add(*wiener_sum)
+        ))
+
+    return pystencils_reco.AssignmentCollection(assignments)
+
+
+@crazy
+def _get_wieners(complex_field: Field, output_wieners: Field, sigma):
+    assert complex_field.index_dimensions == 3
+    assert output_wieners.index_dimensions == 2
+
+    assignments = []
+    norm_factor = complex_field.index_shape[0] * complex_field.index_shape[1]
+
+    for stack_index in range(complex_field.index_shape[0]):
+        for patch_index in range(complex_field.index_shape[1]):
+
+            magnitude = sum(complex_field.center(stack_index, patch_index, i) ** 2 for i in (0, 1))
+            val = magnitude / norm_factor
+            wien = val / (val + sigma * sigma)
+
+            assignments.append(
+                pystencils.Assignment(output_wieners.center(stack_index, patch_index), wien)
+            )
+
+    return pystencils_reco.AssignmentCollection(assignments)
+
+
 class Bm3d:
     """docstring for Bm3d"""
 
@@ -146,6 +197,14 @@ class Bm3d:
             wiener_sigma = pystencils.typed_symbols('wiener_sigma', input_field.dtype.numpy_dtype)
         self.wiener_filtering = _wiener_filtering(
             complex_field, group_weights, wiener_sigma).compile(compilation_target)
+        wiener_coefficients = Field.create_fixed_size('wiener_coefficients',
+                                                      block_matched_shape,
+                                                      index_dimensions=2,
+                                                      dtype=input_field.dtype.numpy_dtype)
+        self.get_wieners = _get_wieners(complex_field, wiener_coefficients,
+                                        wiener_sigma).compile(compilation_target)
+        self.apply_wieners = _apply_wieners(complex_field, wiener_coefficients,
+                                            group_weights).compile(compilation_target)
 
         self.aggregate = aggregate(block_scores,
                                    output,
