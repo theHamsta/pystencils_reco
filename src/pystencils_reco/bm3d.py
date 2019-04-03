@@ -7,8 +7,6 @@
 """
 
 """
-import numpy as np
-import pampy
 import sympy
 
 import pystencils
