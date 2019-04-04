@@ -62,52 +62,66 @@ def project_shepp_logan():
     m3 = sympy.Matrix([[0, 1, 0],
                        [0, 1, 1]])
 
-    for i, projection_matrix in enumerate((m0, m1, m2, m3)):
+    for with_spline in (False, True):
+        for i, projection_matrix in enumerate((m0, m1, m2, m3)):
 
-        volume = pystencils.fields('volume: float32[100,100,100]')
-        projections = pystencils.fields('projections: float32[1024,960]')
-        volume.set_coordinate_origin_to_field_center()
-        volume.coordinate_transform = sympy.rot_axis2(0.2)
-        # volume.coordinate_transform = sympy.rot_axis3(0.1)
-        volume.coordinate_transform = 3 * volume.coordinate_transform
-        projections.set_coordinate_origin_to_field_center()
+            volume = pystencils.fields('volume: float32[100,100,100]')
+            projections = pystencils.fields('projections: float32[1024,960]')
+            volume.set_coordinate_origin_to_field_center()
+            volume.coordinate_transform = sympy.rot_axis2(0.2)
+            # volume.coordinate_transform = sympy.rot_axis3(0.1)
+            volume.coordinate_transform = 3 * volume.coordinate_transform
+            projections.set_coordinate_origin_to_field_center()
 
-        kernel = forward_projection(volume, projections, projection_matrix, step_size=1)
-        print(kernel)
-        kernel = kernel.compile('gpu')
-        print(kernel.code)
+            kernel = forward_projection(volume,
+                                        projections,
+                                        projection_matrix,
+                                        step_size=1,
+                                        cubic_bspline_interpolation=with_spline)
+            print(kernel)
+            kernel = kernel.compile('gpu')
+            # print(kernel.code)
 
-        volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
-        projection_gpu = GPUArray(projections.spatial_shape, np.float32)
+            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
+            if with_spline:
+                pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(volume_gpu)
+            projection_gpu = GPUArray(projections.spatial_shape, np.float32)
 
-        kernel(volume=volume_gpu, projections=projection_gpu)
+            kernel(volume=volume_gpu, projections=projection_gpu)
 
-        pyconrad.imshow(volume_gpu, 'volume')
-        pyconrad.imshow(projection_gpu, 'projections' + str(i))
+            pyconrad.imshow(volume_gpu, 'volume')
+            pyconrad.imshow(projection_gpu, 'projections' + str(i))
 
-    for i, projection_matrix in enumerate((m0, m1, m2, m3)):
-        angle = pystencils.typed_symbols('angle', 'float32')
+    for with_spline in (False, True):
+        for i, projection_matrix in enumerate((m0, m1, m2, m3)):
+            angle = pystencils.typed_symbols('angle', 'float32')
 
-        volume = pystencils.fields('volume: float32[100,100,100]')
-        projections = pystencils.fields('projections: float32[1024,960]')
-        volume.set_coordinate_origin_to_field_center()
-        volume.coordinate_transform = sympy.rot_axis2(angle)
-        # volume.coordinate_transform = sympy.rot_axis3(0.1)
-        volume.coordinate_transform = 3 * volume.coordinate_transform
-        projections.set_coordinate_origin_to_field_center()
+            volume = pystencils.fields('volume: float32[100,100,100]')
+            projections = pystencils.fields('projections: float32[1024,960]')
+            volume.set_coordinate_origin_to_field_center()
+            volume.coordinate_transform = sympy.rot_axis2(angle)
+            # volume.coordinate_transform = sympy.rot_axis3(0.1)
+            volume.coordinate_transform = 3 * volume.coordinate_transform
+            projections.set_coordinate_origin_to_field_center()
 
-        kernel = forward_projection(volume, projections, projection_matrix, step_size=1)
-        print(kernel)
-        kernel = kernel.compile('gpu')
-        print(kernel.code)
+            kernel = forward_projection(volume,
+                                        projections,
+                                        projection_matrix,
+                                        step_size=1,
+                                        cubic_bspline_interpolation=with_spline)
+            print(kernel)
+            kernel = kernel.compile('gpu')
+            # print(kernel.code)
 
-        volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
-        projection_gpu = GPUArray(projections.spatial_shape, np.float32)
+            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
+            if with_spline:
+                pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(volume_gpu)
+            projection_gpu = GPUArray(projections.spatial_shape, np.float32)
 
-        for phi in np.arange(0, np.pi, np.pi / 100):
-            kernel(volume=volume_gpu, projections=projection_gpu, angle=phi)
-            pyconrad.imshow(projection_gpu, 'rotation!')
-        pyconrad.close_all_windows()
+            for phi in np.arange(0, np.pi, np.pi / 100):
+                kernel(volume=volume_gpu, projections=projection_gpu, angle=phi)
+                pyconrad.imshow(projection_gpu, 'rotation!')
+            pyconrad.close_all_windows()
 
 
 def main():

@@ -8,6 +8,7 @@
 Implements common resampling operations like rotations and scalings
 """
 
+import types
 from collections.abc import Iterable
 
 import sympy
@@ -15,12 +16,17 @@ import sympy
 import pystencils
 from pystencils.autodiff import AdjointField
 from pystencils_reco import AssignmentCollection, crazy
-import types
 
 
 @crazy
-def generic_spatial_matrix_transform(input_field, output_field, transform_matrix, inverse_matrix=None):
-    texture = pystencils.astnodes.TextureCachedField(input_field)
+def generic_spatial_matrix_transform(input_field,
+                                     output_field,
+                                     transform_matrix,
+                                     inverse_matrix=None,
+                                     cubic_bspline_interpolation=False):
+    import pycuda.driver
+    texture = pystencils.astnodes.TextureCachedField(input_field,
+                                                     cubic_bspline_interpolation=cubic_bspline_interpolation)
 
     if inverse_matrix is None:
         inverse_matrix = transform_matrix.inv()
@@ -68,7 +74,11 @@ def scale_transform(input_field, output_field, scaling_factor):
 
 
 @crazy
-def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=None):
+def rotation_transform(input_field,
+                       output_field,
+                       rotation_angle,
+                       rotation_axis=None,
+                       cubic_bspline_interpolation=False):
     if input_field.spatial_dimensions == 3:
         assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
         transform_matrix = getattr(sympy, 'rot_axis%i' % (rotation_axis + 1))(rotation_angle)
@@ -81,7 +91,8 @@ def rotation_transform(input_field, output_field, rotation_angle, rotation_axis=
     return generic_spatial_matrix_transform(input_field,
                                             output_field,
                                             transform_matrix,
-                                            inverse_matrix=transform_matrix.T)
+                                            inverse_matrix=transform_matrix.T,
+                                            cubic_bspline_interpolation=cubic_bspline_interpolation)
 
 
 @crazy

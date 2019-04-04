@@ -17,6 +17,12 @@ import skimage.io
 import pystencils
 from pystencils_reco.resampling import rotation_transform, scale_transform
 
+try:
+    import pyconrad.autoinit
+except Exception:
+    from unittest.mock import MagicMock
+    pyconrad = MagicMock()
+
 
 def test_scaling():
 
@@ -54,7 +60,6 @@ def test_rotation_compilation():
                 rotation_transform(x, y, angle, axis).compile('gpu')
 
 
-@pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip GUI tests on CI")
 def test_scaling_visualize():
     import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
@@ -73,9 +78,7 @@ def test_scaling_visualize():
         pyconrad.imshow(tmp.get(), str(s))
 
 
-@pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip GUI tests on CI")
 def test_rotation_visualize():
-    import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
 
     x, y = pystencils.fields('x,y: float32[2d]')
@@ -87,12 +90,31 @@ def test_rotation_visualize():
     test_image = to_gpu(test_image)
     tmp = zeros_like(test_image)
 
-    for s in (0.2, 0.5, 0.7, 1, 2):
+    for s in (0,0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
         pyconrad.imshow(tmp.get(), str(s))
 
 
-@pytest.mark.skipif("CI" in os.environ and os.environ["CI"] == "true", reason="Skip GUI tests on CI")
+def test_rotation_visualize_bspline():
+    from pycuda.gpuarray import to_gpu, zeros_like
+
+    x, y = pystencils.fields('x,y: float32[2d]')
+    s = pystencils.data_types.TypedSymbol('s', 'float32')
+    transform = rotation_transform(x, y, s, cubic_bspline_interpolation=True).compile('gpu')
+
+    test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
+    test_image = np.ascontiguousarray(test_image, np.float32)
+    test_image = to_gpu(test_image)
+    pyconrad.imshow(test_image, "before")
+    pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(test_image)
+    pyconrad.imshow(test_image, "prefiltered")
+    tmp = zeros_like(test_image)
+
+    for s in (0,0.2, 0.5, 0.7, 1, 2):
+        transform(x=test_image, y=tmp, s=s)
+        pyconrad.imshow(tmp.get(), str(s) + " bispline")
+
+
 def test_rotation_around_center_visualize():
     import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
@@ -115,13 +137,14 @@ def test_rotation_around_center_visualize():
 
 
 def main():
-    test_scaling()
-    test_rotation()
-    test_scaling_compilation()
-    test_rotation_compilation()
-    test_scaling_visualize()
+    # test_scaling()
+    # test_rotation()
+    # test_scaling_compilation()
+    # test_rotation_compilation()
+    # test_scaling_visualize()
     test_rotation_visualize()
-    test_rotation_around_center_visualize()
+    test_rotation_visualize_bspline()
+    # test_rotation_around_center_visualize()
 
 
 if __name__ == '__main__':

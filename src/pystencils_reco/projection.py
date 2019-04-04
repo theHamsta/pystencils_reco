@@ -20,9 +20,14 @@ from pystencils_reco import crazy
 
 
 @crazy
-def forward_projection(input_volume_field, output_projections_field, projection_matrix, step_size=1):
+def forward_projection(input_volume_field,
+                       output_projections_field,
+                       projection_matrix,
+                       step_size=1,
+                       cubic_bspline_interpolation=False):
+    # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
 
-    volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field)
+    volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field, cubic_bspline_interpolation=cubic_bspline_interpolation)
     ndim = input_volume_field.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
@@ -36,7 +41,8 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     if is_perspective:
         eqn = projection_matrix @ sympy.Matrix([*x, 1]) - sympy.Matrix([*(t*u), t])
     else:
-        eqn = projection_matrix @ x - u  # this also works for perspective/cone beam projection
+        # this also works for perspective/cone beam projection (but may lead to instable parametrization)
+        eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
 
     if not is_perspective:
@@ -68,7 +74,7 @@ def forward_projection(input_volume_field, output_projections_field, projection_
     intersection_point2 = sympy.Piecewise(*[(f, sympy.And(*conditions).subs({t: f}))
                                             for f in reversed(intersection_candidates)], (-0, True))
     assert intersection_point1 != intersection_point2, \
-        "The intersection are unconditionally equal, reconstruction volume is not in detector FOV!"
+        "The intersections are unconditionally equal, reconstruction volume is not in detector FOV!"
 
     # perform a integer set analysis here?
     # space = isl.Space.create_from_names(isl.DEFAULT_CONTEXT, set=[str(t) for t in texture_coordinates])
