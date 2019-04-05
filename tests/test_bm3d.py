@@ -43,12 +43,12 @@ def test_bm3d():
 
     bm3d = Bm3d(lenna_noisy,
                 lenna_denoised,
-                BoxStencil(4, ndim),
-                BallStencil(2, ndim),
+                BoxStencil(5, ndim),
+                BallStencil(3, ndim),
                 compilation_target='gpu',
                 max_block_matches=8,
-                blockmatching_threshold=10,
-                hard_threshold=4,
+                blockmatching_threshold=1,
+                hard_threshold=10,
                 wiener_sigma=1)
 
     block_scores = zeros(bm3d.block_scores.shape, bm3d.block_scores.dtype.numpy_dtype)
@@ -73,7 +73,7 @@ def test_bm3d():
     import skcuda.fft as cufft
     # forward_plan = cufft.cufftPlan3d(8, 4, 4, cufft.CUFFT_R2C)
 
-    plan = cufft.Plan((8, 4, 4), np.complex64, np.complex64, 512*512)
+    plan = cufft.Plan((8, 5, 5), np.complex64, np.complex64, 512*512)
     # forward_plan = cufft.cufftPlanMany(3, [8, 4, 4],
     # 0, 0, 0,
     # 0, 0, 0, cufft.CUFFT_R2C, 512*512)
@@ -82,23 +82,25 @@ def test_bm3d():
     # 0, 0, 0, cufft.CUFFT_C2R, 512*512)
 
     block_matched = block_matched.astype(np.complex64)
-    reshaped = pycuda.gpuarray.reshape(block_matched, (512*512, 8, 4, 4))
+    reshaped = pycuda.gpuarray.reshape(block_matched, (512*512, 8, 5, 5))
     cufft.fft(reshaped, reshaped, plan)
     pyconrad.imshow(reshaped, 'FFT')
     print('fft')
 
     real_shaped = pycuda.gpuarray.reshape(block_matched.view(np.float32), bm3d.complex_field.shape)
     bm3d.hard_thresholding(complex_field=real_shaped, group_weights=weights)
-    bm3d.wiener_filtering(complex_field=real_shaped, group_weights=weights)
+    # bm3d.wiener_filtering(complex_field=real_shaped, group_weights=weights)
 
     cufft.ifft(reshaped, reshaped, plan, scale=True)
     pyconrad.imshow(reshaped, 'iFFT')
     print('ifft')
 
-    reshaped = pycuda.gpuarray.reshape(reshaped.real, (512, 512, 8, 16))
+    reshaped = pycuda.gpuarray.reshape(reshaped.real, (512, 512, 8, 5*5))
 
     import pyconrad
-    bm3d.aggregate(block_scores=block_scores, block_matched=reshaped)
+    pyconrad.imshow(lenna_noisy, 'noisy')
+    bm3d.aggregate(block_scores=block_scores, block_matched=reshaped, group_weights=weights, accumulated_weights=lenna)
+    lenna_denoised /= lenna
     pyconrad.imshow(lenna_denoised, 'denoised')
 
 

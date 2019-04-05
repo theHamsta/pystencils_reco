@@ -7,130 +7,18 @@
 """
 
 """
-import sympy
+import pycuda.gpuarray as gpuarray
 
 import pystencils
 import pystencils_reco
 from pystencils import Field
-from pystencils_reco import crazy
-from pystencils_reco.block_matching import (aggregate,
-                                            block_matching_integer_offsets,
-                                            collect_patches)
-
-
-@crazy
-def _hard_thresholding(complex_field: Field, output_weight_field, threshold):
-    assert complex_field.index_dimensions == 3
-    assert output_weight_field.index_dimensions == 1
-
-    assignments = []
-
-    for stack_index in range(complex_field.index_shape[0]):
-        num_nonzeros = []
-        for patch_index in range(complex_field.index_shape[1]):
-
-            magnitude = sum(complex_field.center(stack_index, patch_index, i) ** 2 for i in (0, 1))
-            assignments.extend(
-                pystencils.Assignment(complex_field.center(stack_index, patch_index, i),
-                                      sympy.Piecewise(
-                    (complex_field.center(stack_index, patch_index, i),
-                     magnitude > threshold ** 2),  (0, True)))
-                for i in (0, 1)
-            )
-            num_nonzeros.append(sympy.Piecewise((1, magnitude > threshold ** 2), (0, True)))
-
-        assignments.append(pystencils.Assignment(
-            output_weight_field.center(stack_index), 1 / sympy.Add(*num_nonzeros)
-        ))
-
-    return pystencils_reco.AssignmentCollection(assignments)
-
-
-@crazy
-def _wiener_filtering(complex_field: Field, output_weight_field: Field, sigma):
-    assert complex_field.index_dimensions == 3
-    assert output_weight_field.index_dimensions == 1
-
-    assignments = []
-
-    norm_factor = complex_field.index_shape[0] * complex_field.index_shape[1]
-    wiener_sum = []
-
-    for stack_index in range(complex_field.index_shape[0]):
-        for patch_index in range(complex_field.index_shape[1]):
-
-            magnitude = sum(complex_field.center(stack_index, patch_index, i) ** 2 for i in (0, 1))
-            val = magnitude / norm_factor  # implementation differ whether to apply norm_factor on val on wien
-            wien = val / (val + sigma * sigma)
-
-            wiener_sum.append(wien**2)
-
-            assignments.extend(
-                pystencils.Assignment(complex_field.center(stack_index, patch_index, i),
-                                      complex_field.center(stack_index, patch_index, i) * wien)
-                for i in (0, 1)
-            )
-
-        assignments.append(pystencils.Assignment(
-            output_weight_field.center(stack_index), 1 / sympy.Add(*wiener_sum)
-        ))
-
-    return pystencils_reco.AssignmentCollection(assignments)
-
-
-@crazy
-def _apply_wieners(complex_field: Field, wieners: Field, output_weight_field: Field):
-    assert complex_field.index_dimensions == 3
-    assert wieners.index_dimensions == 2
-    assert output_weight_field.index_dimensions == 1
-
-    assignments = []
-    wiener_sum = []
-
-    for stack_index in range(complex_field.index_shape[0]):
-        for patch_index in range(complex_field.index_shape[1]):
-
-            wien = wieners(stack_index, patch_index)
-
-            wiener_sum.append(wien**2)
-
-            assignments.extend(
-                pystencils.Assignment(complex_field.center(stack_index, patch_index, i),
-                                      complex_field.center(stack_index, patch_index, i) * wien)
-                for i in (0, 1)
-            )
-
-        assignments.append(pystencils.Assignment(
-            output_weight_field.center(stack_index), 1 / sympy.Add(*wiener_sum)
-        ))
-
-    return pystencils_reco.AssignmentCollection(assignments)
-
-
-@crazy
-def _get_wieners(complex_field: Field, output_wieners: Field, sigma):
-    assert complex_field.index_dimensions == 3
-    assert output_wieners.index_dimensions == 2
-
-    assignments = []
-    norm_factor = complex_field.index_shape[0] * complex_field.index_shape[1]
-
-    for stack_index in range(complex_field.index_shape[0]):
-        for patch_index in range(complex_field.index_shape[1]):
-
-            magnitude = sum(complex_field.center(stack_index, patch_index, i) ** 2 for i in (0, 1))
-            val = magnitude / norm_factor
-            wien = val / (val + sigma * sigma)
-
-            assignments.append(
-                pystencils.Assignment(output_wieners.center(stack_index, patch_index), wien)
-            )
-
-    return pystencils_reco.AssignmentCollection(assignments)
+from pystencils_reco.block_matching import block_matching_integer_offsets
+from pystencils_reco.bm3d_kernels import (aggregate, apply_wieners,
+                                          calc_wiener_coefficients,
+                                          collect_patches, hard_thresholding)
 
 
 class Bm3d:
-    """docstring for Bm3d"""
 
     def __init__(self, input: Field,
                  output: Field,
@@ -147,6 +35,7 @@ class Bm3d:
 
         input_field = pystencils_reco._crazy_decorator.coerce_to_field('input_field', input)
         output_field = pystencils_reco._crazy_decorator.coerce_to_field('output_field', output)
+        accumulated_weights = input_field.new_field_with_different_name('accumulated_weights')
 
         block_scores_shape = output_field.shape + (len(matching_stencil),)
         block_scores = Field.create_fixed_size('block_scores',
@@ -189,20 +78,18 @@ class Bm3d:
                                                 dtype=input_field.dtype.numpy_dtype)
         self.complex_field = complex_field
         self.group_weights = group_weights
-        self.hard_thresholding = _hard_thresholding(
+        self.hard_thresholding = hard_thresholding(
             complex_field, group_weights, hard_threshold).compile(compilation_target)
         if not wiener_sigma:
             wiener_sigma = pystencils.typed_symbols('wiener_sigma', input_field.dtype.numpy_dtype)
-        self.wiener_filtering = _wiener_filtering(
-            complex_field, group_weights, wiener_sigma).compile(compilation_target)
         wiener_coefficients = Field.create_fixed_size('wiener_coefficients',
                                                       block_matched_shape,
                                                       index_dimensions=2,
                                                       dtype=input_field.dtype.numpy_dtype)
-        self.get_wieners = _get_wieners(complex_field, wiener_coefficients,
-                                        wiener_sigma).compile(compilation_target)
-        self.apply_wieners = _apply_wieners(complex_field, wiener_coefficients,
-                                            group_weights).compile(compilation_target)
+        self.get_wieners = calc_wiener_coefficients(complex_field, wiener_coefficients,
+                                                    wiener_sigma).compile(compilation_target)
+        self.apply_wieners = apply_wieners(complex_field, wiener_coefficients,
+                                           group_weights).compile(compilation_target)
 
         self.aggregate = aggregate(block_scores,
                                    output,
@@ -212,4 +99,57 @@ class Bm3d:
                                    blockmatching_threshold,
                                    max_block_matches,
                                    compilation_target,
+                                   group_weights,
+                                   accumulated_weights,
                                    **compilation_kwargs)
+
+    def do_on_gpu(self):
+        block_scores = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
+        weights = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
+        block_matched = gpuarray.zeros(self.block_matched_field.shape, self.block_matched_field.dtype.numpy_dtype)
+
+        # print(self.block_matching.code)
+        # print(self.aggregate.code)
+        # print(self.collect_patches.code)
+
+        # self.block_matching(block_scores=block_scores)
+        # pyconrad.imshow(block_scores, 'block_scores')
+
+        # self.collect_patches(block_scores=block_scores, block_matched=block_matched)
+        # pyconrad.imshow(block_matched, 'block_matched')
+
+        # print(block_matched.shape)
+        # # fft[...] = block_matched
+
+        # # reikna.fft.FFT(fft, (-3, -2, -1))
+        # # pyconrad.imshow(fft, 'FFT')
+        # import skcuda.fft as cufft
+        # # forward_plan = cufft.cufftPlan3d(8, 4, 4, cufft.CUFFT_R2C)
+
+        # plan = cufft.Plan((8, 4, 4), np.complex64, np.complex64, 512*512)
+        # # forward_plan = cufft.cufftPlanMany(3, [8, 4, 4],
+        # # 0, 0, 0,
+        # # 0, 0, 0, cufft.CUFFT_R2C, 512*512)
+        # # backward_plan = cufft.cufftPlanMany(3, [8, 4, 4],
+        # # 0, 0, 0,
+        # # 0, 0, 0, cufft.CUFFT_C2R, 512*512)
+
+        # block_matched = block_matched.astype(np.complex64)
+        # reshaped = pycuda.gpuarray.reshape(block_matched, (512*512, 8, 4, 4))
+        # cufft.fft(reshaped, reshaped, plan)
+        # pyconrad.imshow(reshaped, 'FFT')
+        # print('fft')
+
+        # real_shaped = pycuda.gpuarray.reshape(block_matched.view(np.float32), self.complex_field.shape)
+        # self.hard_thresholding(complex_field=real_shaped, group_weights=weights)
+        # self.wiener_filtering(complex_field=real_shaped, group_weights=weights)
+
+        # cufft.ifft(reshaped, reshaped, plan, scale=True)
+        # pyconrad.imshow(reshaped, 'iFFT')
+        # print('ifft')
+
+        # reshaped = pycuda.gpuarray.reshape(reshaped.real, (512, 512, 8, 16))
+
+        # import pyconrad
+        # self.aggregate(block_scores=block_scores, block_matched=reshaped)
+        # pyconrad.imshow(lenna_denoised, 'denoised')

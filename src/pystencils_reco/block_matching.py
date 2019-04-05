@@ -7,7 +7,6 @@
 """
 
 """
-import uuid
 
 import sympy
 from tqdm import tqdm
@@ -15,7 +14,7 @@ from tqdm import tqdm
 import pystencils
 import pystencils_reco.functions
 from pystencils import Field
-from pystencils.astnodes import ForEach, Select, address_of
+from pystencils.astnodes import ForEach, Select, address_of, get_dummy_symbol
 from pystencils_reco import AssignmentCollection, crazy
 
 
@@ -97,92 +96,6 @@ def block_matching_integer_offsets(input_field: Field,
     # TODO: determine necessary ghost_layers
     # TODO: move into LoopOverCoordinate body (better performance on CPU?)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)
-    return pystencils.make_python_function(ast, target=compilation_target)
-
-
-@crazy
-def collect_patches(block_scores: Field,
-                    patch_input_field: Field,
-                    destination_field: Field,
-                    block_stencil,
-                    matching_stencil,
-                    threshold,
-                    max_selected,
-                    compilation_target,
-                    **compilation_kwargs
-                    ):
-    max_offset = max(max(o) for o in matching_stencil)
-    max_offset += max(max(o) for o in block_stencil)
-
-    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
-    copies = []
-
-    assert destination_field.index_dimensions == 2
-    assert destination_field.index_shape[-1] == len(block_stencil)
-
-    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
-    for i, s in enumerate(block_stencil):
-        shifted = tuple(s + o for s, o in zip(offset, s))
-        copies.append(pystencils.Assignment(destination_field.center(nth_hit, i), patch_input_field[shifted]))
-
-    assignments = AssignmentCollection(copies)
-    ast = pystencils.create_kernel(assignments, target=compilation_target,
-                                   data_type=patch_input_field.dtype,
-                                   ghost_layers=max_offset,
-                                   **compilation_kwargs)
-    # TODO move select on per coordinate level
-    ast._body = Select(ast.body,
-                       what=offset,
-                       from_iterable=matching_stencil,
-                       predicate=block_scores.center(n) < threshold,
-                       counter_symbol=n,
-                       hit_counter_symbol=nth_hit,
-                       max_selected=max_selected,
-                       compilation_target=compilation_target)
-    return pystencils.make_python_function(ast, target=compilation_target)
-
-
-@crazy
-def aggregate(block_scores: Field,
-              patch_input_field: Field,
-              destination_field: Field,
-              block_stencil,
-              matching_stencil,
-              threshold,
-              max_selected,
-              compilation_target,
-              **compilation_kwargs):
-
-    max_offset = max(max(o) for o in matching_stencil)
-    max_offset += max(max(o) for o in block_stencil)
-
-    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
-    copies = []
-
-    assert destination_field.index_dimensions == 2
-    assert destination_field.index_shape[-1] == len(block_stencil)
-
-    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
-    for i, s in enumerate(block_stencil):
-        shifted = tuple(s + o for s, o in zip(offset, s))
-        copies.append(pystencils.Assignment(pystencils.typed_symbols('dummy%s' % uuid.uuid4().hex, 'bool'),
-                                            sympy.Function('atomicAdd')(address_of(patch_input_field[shifted]),
-                                                                        destination_field.center(nth_hit, i))))
-
-    assignments = AssignmentCollection(copies)
-    ast = pystencils.create_kernel(assignments, target=compilation_target,
-                                   data_type=patch_input_field.dtype,
-                                   ghost_layers=max_offset,
-                                   **compilation_kwargs)
-
-    ast._body = Select(ast.body,
-                       what=offset,
-                       from_iterable=matching_stencil,
-                       predicate=block_scores.center(n) < threshold,
-                       counter_symbol=n,
-                       hit_counter_symbol=nth_hit,
-                       compilation_target=compilation_target,
-                       max_selected=max_selected)
     return pystencils.make_python_function(ast, target=compilation_target)
 
 
