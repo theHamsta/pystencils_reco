@@ -90,7 +90,7 @@ def test_rotation_visualize():
     test_image = to_gpu(test_image)
     tmp = zeros_like(test_image)
 
-    for s in (0,0.2, 0.5, 0.7, 1, 2):
+    for s in (0, 0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
         pyconrad.imshow(tmp.get(), str(s))
 
@@ -110,7 +110,7 @@ def test_rotation_visualize_bspline():
     pyconrad.imshow(test_image, "prefiltered")
     tmp = zeros_like(test_image)
 
-    for s in (0,0.2, 0.5, 0.7, 1, 2):
+    for s in (0, 0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
         pyconrad.imshow(tmp.get(), str(s) + " bispline")
 
