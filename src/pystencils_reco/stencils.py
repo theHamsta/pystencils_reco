@@ -39,6 +39,12 @@ class Stencil(list):
         new_stencil = [s for s in self if all(s[i] % t == 0 for i, t in enumerate(strides))]
         return Stencil(new_stencil, self.ndim)
 
+    @property
+    def shape(self):
+        mins = [min(s[i] for s in self) for i in range(self.ndim)]
+        maxs = [max(s[i] for s in self) for i in range(self.ndim)]
+        return tuple(a-b+1 for a, b in zip(maxs, mins))
+
 
 class LineStencil(Stencil):
     """Stencil along one dimension. Results in a 1D filter"""
