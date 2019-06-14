@@ -8,6 +8,7 @@
 
 """
 
+from pystencils.field import Field
 import inspect
 import types
 from functools import partial
@@ -18,8 +19,10 @@ import sympy
 
 import pystencils
 import pystencils_reco
-from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
-from pystencils.field import Field
+try:
+    from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
+except Exception:
+    pass
 
 try:
     import torch
