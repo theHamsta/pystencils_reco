@@ -26,7 +26,7 @@ def gaussian(input_symbols, sigma=1):
 
     x = sympy.Matrix(input_symbols)
     return sympy.sqrt(sympy.pi**ndim / covariance_matrix.det()) * \
-        sympy.exp(-x.transpose() @ covariance_matrix @ x[0, 0])
+        sympy.exp((-x.transpose() @ covariance_matrix @ x)[0, 0])
 
 
 def squared_difference(x, y):

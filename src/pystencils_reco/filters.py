@@ -13,8 +13,8 @@ import functools
 import pystencils
 import pystencils.simp
 import pystencils_reco.functions
-from pystencils_reco._assignment_collection import AssignmentCollection
 from pystencils_reco import crazy
+from pystencils_reco._assignment_collection import AssignmentCollection
 
 
 @crazy
