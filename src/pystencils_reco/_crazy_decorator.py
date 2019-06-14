@@ -65,12 +65,16 @@ def coerce_to_field(field_name, array_like):
     return _create_field_from_array_like(field_name, array_like)
 
 
+def is_array_like(a):
+    return (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)
+
+
 def crazy(function):
 
     def wrapper(*args, **kwargs):
         arg_names = inspect.getfullargspec(function).args
         compile_args = [_create_field_from_array_like(arg_names[i], a)
-                        if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)  # noqa
+                        if is_array_like(a)
                         else a for i, a in enumerate(args)]
         compile_kwargs = {k: _create_field_from_array_like(str(k), a)
                           if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)  # noqa
