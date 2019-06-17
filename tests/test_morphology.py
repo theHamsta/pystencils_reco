@@ -19,7 +19,7 @@ from pystencils_reco.stencils import BallStencil
 
 try:
     import pyconrad.autoinit
-except:
+except Exception:
     from unittest.mock import pyconrad
 
 
@@ -42,7 +42,7 @@ def test_visualize_morphology():
     print(dilation)
     dilation = dilation.compile()
 
-    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data",  "test_vessel2d_mask.png"), as_gray=True)
+    test_image = 1-skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.uint8)
     tmp = np.zeros_like(test_image)
     erosion(x=test_image, y=tmp)

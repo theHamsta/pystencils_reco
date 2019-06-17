@@ -10,8 +10,9 @@
 """
 import sys
 
-from pkg_resources import require, VersionConflict
+from pkg_resources import VersionConflict, require
 from setuptools import setup
+
 
 try:
     require('setuptools>=38.3')
@@ -22,3 +23,4 @@ except VersionConflict:
 
 if __name__ == "__main__":
     setup(use_pyscaffold=True)
+

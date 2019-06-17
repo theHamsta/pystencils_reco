@@ -35,9 +35,9 @@ def _morphological(input_field, output_field, stencil, is_erosion):
         sum += pixel_ok
 
     if is_erosion:
-        central_pixel = sympy.Piecewise((1, sum >= len(stencil)),  (0, True))
+        central_pixel = sympy.Piecewise((1, sum >= len(stencil)), (0, True))
     else:
-        central_pixel = sympy.Piecewise((0, sum >= len(stencil)),  (1, True))
+        central_pixel = sympy.Piecewise((0, sum >= len(stencil)), (1, True))
 
     assignments = AssignmentCollection({
         output_field.center(): central_pixel
