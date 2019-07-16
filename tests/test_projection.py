@@ -62,7 +62,7 @@ def project_shepp_logan():
     m3 = sympy.Matrix([[0, 1, 0],
                        [0, 1, 1]])
 
-    for with_spline in (False,True):
+    for with_spline in (False, True):
         for i, projection_matrix in enumerate((m0, m1, m2, m3)):
 
             volume = pystencils.fields('volume: float32[100,100,100]')
@@ -92,7 +92,7 @@ def project_shepp_logan():
             pyconrad.imshow(volume_gpu, 'volume ' + str(with_spline))
             pyconrad.imshow(projection_gpu, 'projections ' + str(i) + str(with_spline))
 
-    for with_spline in (False,True):
+    for with_spline in (False, True):
         for i, projection_matrix in enumerate((m0, m1, m2, m3)):
             angle = pystencils.typed_symbols('angle', 'float32')
 

@@ -7,11 +7,9 @@
 """
 
 """
-import os
 from os.path import dirname, join
 
 import numpy as np
-import pytest
 import skimage.io
 
 import pystencils
