@@ -18,6 +18,12 @@ import pystencils.simp
 import pystencils_reco.filters
 from pystencils_reco.stencils import BoxStencil
 
+try:
+    import pyconrad.autoinit
+except ImportError:  # NOQA
+    from unittest.mock import MagicMock
+    pyconrad = MagicMock()
+
 
 def test_mean_filter():
     x, y = pystencils.fields('x,y: float32[2d]')
@@ -86,7 +92,6 @@ def test_visualize_mean_filter():
     kernel = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2)).compile()
     kernel(x=x_array, y=y_array)
 
-    import pyconrad.autoinit
     pyconrad.imshow(x_array, 'x')
     pyconrad.imshow(y_array, 'y')
 

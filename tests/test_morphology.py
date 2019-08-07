@@ -19,8 +19,9 @@ from pystencils_reco.stencils import BallStencil
 
 try:
     import pyconrad.autoinit
-except Exception:
-    from unittest.mock import pyconrad
+except ImportError:  # NOQA
+    from unittest.mock import MagicMock
+    pyconrad = MagicMock()
 
 
 def test_morphology():

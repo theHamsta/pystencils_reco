@@ -7,14 +7,19 @@
 """
 
 """
+import uuid
+
 import sympy
 
 import pystencils
 from pystencils import Field
-from pystencils.astnodes import get_dummy_symbol
-from pystencils.data_types import address_of
+from pystencils.data_types import address_of, create_type
 from pystencils_reco import AssignmentCollection, crazy
 from pystencils_reco.astnodes import Select
+
+
+def _get_dummy_symbol(dtype=None):
+    return pystencils.typed_symbols('dummy%s' % uuid.uuid4().hex, dtype or create_type('bool'))
 
 
 @crazy

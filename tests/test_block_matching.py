@@ -23,8 +23,9 @@ from pystencils_reco.stencils import BallStencil, BoxStencil
 
 try:
     import pyconrad.autoinit
-except:  # NOQA
-    from unittest.mock import pyconrad
+except ImportError:  # NOQA
+    from unittest.mock import MagicMock
+    pyconrad = MagicMock()
 
 
 def test_block_matching_unrolled():
