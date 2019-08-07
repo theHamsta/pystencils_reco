@@ -16,7 +16,7 @@ import pystencils
 import pystencils.astnodes
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
-from pystencils.autodiff import AdjointField
+from pystencils_autodiff import AdjointField
 from pystencils_reco import crazy
 
 
@@ -121,7 +121,7 @@ def forward_projection(input_volume_field: pystencils.Field,
                                                    AdjointField(input_volume_field),
                                                    projection_matrix,
                                                    1)
-        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+        self._autodiff = pystencils_autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
 
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
 

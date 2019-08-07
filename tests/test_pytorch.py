@@ -11,7 +11,7 @@ import sympy
 
 import pystencils
 import pystencils_reco.resampling
-from pystencils.autodiff import torch_tensor_from_field
+from pystencils_autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil

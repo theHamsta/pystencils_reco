@@ -18,7 +18,7 @@ import pycuda.gpuarray
 from pystencils.field import Field
 
 try:
-    from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
+    from pystencils_autodiff.backends._pytorch import torch_dtype_to_numpy
 except Exception:
     pass
 
