@@ -41,7 +41,7 @@ class Stencil(list):
     def shape(self):
         mins = [min(s[i] for s in self) for i in range(self.ndim)]
         maxs = [max(s[i] for s in self) for i in range(self.ndim)]
-        return tuple(a-b+1 for a, b in zip(maxs, mins))
+        return tuple(a - b + 1 for a, b in zip(maxs, mins))
 
 
 class LineStencil(Stencil):
@@ -63,9 +63,9 @@ class BoxStencil(Stencil):
     def __init__(self, kernel_size: Union[int, tuple], ndim=3, with_center=True):
         stencil = pampy.match(kernel_size,
                               int, lambda _: itertools.product(
-                                  range(-(kernel_size//2), -(kernel_size//2)+kernel_size), repeat=ndim),
+                                  range(-(kernel_size // 2), -(kernel_size // 2) + kernel_size), repeat=ndim),
                               pampy.ANY, lambda _: itertools.product(
-                                  *[range(-(i//2), -(i//2) + i) for i in kernel_size])
+                                  *[range(-(i // 2), -(i // 2) + i) for i in kernel_size])
                               )
 
         if isinstance(kernel_size, int):
@@ -88,7 +88,7 @@ class BallStencil(Stencil):
         stencil = []
         circumscribing_box = BoxStencil(2*radius+1, ndim)
         for s in circumscribing_box:
-            norm = math.sqrt(sum(i*i for i in s))
+            norm = math.sqrt(sum(i * i for i in s))
             if norm <= radius:
                 stencil.append(s)
 

@@ -27,7 +27,8 @@ def forward_projection(input_volume_field,
                        cubic_bspline_interpolation=False):
     # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
 
-    volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field, cubic_bspline_interpolation=cubic_bspline_interpolation)
+    volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field,
+                                                            cubic_bspline_interpolation=cubic_bspline_interpolation)
     ndim = input_volume_field.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
@@ -83,7 +84,8 @@ def forward_projection(input_volume_field,
     #    # dafaq?
     #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space, {str(texture_coordinates): 1}))
     #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space,
-    #                                                        # {1: -input_volume_field.shape[i], str(texture_coordinates): -1}))
+    #                                                        # {1: -input_volume_field.shape[i],
+    # str(texture_coordinates): -1}))
     #    ray_set.add_constraint(isl.Constraint.eq_from_name(space, ray_equations[i].subs({ #TODO
 
     min_t = sympy.Min(intersection_point1, intersection_point2)
@@ -108,7 +110,7 @@ def forward_projection(input_volume_field,
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
         intensity_weighting: (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2,
-        output_projections_field.center():  (line_integral * step_size * intensity_weighting)
+        output_projections_field.center(): (line_integral * step_size * intensity_weighting)
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     })
 

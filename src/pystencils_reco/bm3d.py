@@ -7,8 +7,7 @@
 """
 
 """
-import pycuda.gpuarray as gpuarray
-
+# import pycuda.gpuarray as gpuarray
 import pystencils
 import pystencils_reco
 from pystencils import Field
@@ -104,9 +103,10 @@ class Bm3d:
                                    **compilation_kwargs)
 
     def do_on_gpu(self):
-        block_scores = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
-        weights = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
-        block_matched = gpuarray.zeros(self.block_matched_field.shape, self.block_matched_field.dtype.numpy_dtype)
+        pass
+        # block_scores = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
+        # weights = gpuarray.zeros(self.block_scores.shape, self.block_scores.dtype.numpy_dtype)
+        # block_matched = gpuarray.zeros(self.block_matched_field.shape, self.block_matched_field.dtype.numpy_dtype)
 
         # print(self.block_matching.code)
         # print(self.aggregate.code)

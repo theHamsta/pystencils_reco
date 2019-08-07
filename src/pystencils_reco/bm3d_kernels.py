@@ -11,8 +11,10 @@ import sympy
 
 import pystencils
 from pystencils import Field
-from pystencils.astnodes import Select, address_of, get_dummy_symbol
+from pystencils.astnodes import get_dummy_symbol
+from pystencils.data_types import address_of
 from pystencils_reco import AssignmentCollection, crazy
+from pystencils_reco.astnodes import Select
 
 
 @crazy
@@ -127,7 +129,7 @@ def hard_thresholding(complex_field: Field, output_weight_field, threshold):
                 pystencils.Assignment(complex_field.center(stack_index, patch_index, i),
                                       sympy.Piecewise(
                     (complex_field.center(stack_index, patch_index, i),
-                     magnitude > threshold ** 2),  (0, True)))
+                     magnitude > threshold ** 2), (0, True)))
                 for i in (0, 1)
             )
             num_nonzeros.append(sympy.Piecewise((1, magnitude > threshold ** 2), (0, True)))

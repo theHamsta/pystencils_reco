@@ -79,4 +79,5 @@ def coordinate_in_field_conditions(field, coordinate_symbols, eps=1e-3):
     # box_intervals = [sympy.Interval(0, s-1) for s in field.spatial_shape]
 
     # return list(coordinate in interval for coordinate, interval in zip(coordinate_vector, box_intervals))
-    return list(c >= -eps for c in coordinate_vector)+list(c <= shape+eps for c, shape in zip(coordinate_vector, field.spatial_shape))
+    return list(c >= -eps for c in coordinate_vector) + \
+        list(c <= shape+eps for c, shape in zip(coordinate_vector, field.spatial_shape))

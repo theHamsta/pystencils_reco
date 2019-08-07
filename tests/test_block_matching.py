@@ -15,7 +15,7 @@ from tqdm import trange
 
 import pystencils
 import pystencils.gpucuda.cudajit
-from pystencils.astnodes import ForEach
+from pystencils_reco.astnodes import ForEach
 from pystencils_reco.block_matching import (
     block_matching_integer_offsets, block_matching_integer_offsets_unrolled,
     single_block_matching)

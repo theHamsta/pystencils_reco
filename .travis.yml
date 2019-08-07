@@ -11,6 +11,7 @@ matrix:
     - python: 3.4
       env: DISTRIB="ubuntu" TOX_PYTHON_VERSION="py34" COVERAGE="true"
     - env: DISTRIB="conda" PYTHON_VERSION="3.6" COVERAGE="false"
+    - env: DISTRIB="ubuntu" TOX_PYTHON_VERSION="py36" COVERAGE="false" LINT="true"
 install:
   - source tests/travis_install.sh
   - pip install -r requirements.txt
@@ -22,7 +23,9 @@ before_script:
   - git config --global user.name "Your Name"
 script:
   - python setup.py test
-  # ^  Change here if using tox
+  - pip install -e .
+  - if [[ "$LINT" == "false" ]]; then python setup.py test; fi
+  - if [[ "$LINT" == "true" ]]; then flake8 src; fi
 after_success:
   - if [[ "$COVERAGE" == "true" ]]; then coveralls || echo "failed"; fi
 after_script:

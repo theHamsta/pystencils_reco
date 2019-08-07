@@ -40,6 +40,13 @@ if [[ "$DISTRIB" == "conda" ]]; then
     source activate ./.venv
 fi
 
+pip install -U pip setuptools
+pip install tox
+pip install codecov
+# use newest pystencils
+pip install git+https://github.com/mabau/pystencils.git
+pip install flake8
+
 if [[ "$COVERAGE" == "true" ]]; then
     pip install coverage coveralls
 fi

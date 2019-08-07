@@ -14,8 +14,8 @@ from tqdm import tqdm
 import pystencils
 import pystencils_reco.functions
 from pystencils import Field
-from pystencils.astnodes import ForEach, Select, address_of, get_dummy_symbol
 from pystencils_reco import AssignmentCollection, crazy
+from pystencils_reco.astnodes import ForEach
 
 
 @crazy
@@ -97,8 +97,6 @@ def block_matching_integer_offsets(input_field: Field,
     # TODO: move into LoopOverCoordinate body (better performance on CPU?)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)
     return pystencils.make_python_function(ast, target=compilation_target)
-
-
 
     # assert block_scores.index_dimensions == 1, \
     # "output_block_scores must have channels equal to the length of matching_stencil"

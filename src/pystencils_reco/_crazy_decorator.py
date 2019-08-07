@@ -8,17 +8,15 @@
 
 """
 
-from pystencils.field import Field
 import inspect
 import types
 from functools import partial
-from itertools import chain
 
-import pycuda.gpuarray
 import sympy
 
-import pystencils
-import pystencils_reco
+import pycuda.gpuarray
+from pystencils.field import Field
+
 try:
     from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
 except Exception:
@@ -77,7 +75,8 @@ def crazy(function):
                         if is_array_like(a)
                         else a for i, a in enumerate(args)]
         compile_kwargs = {k: _create_field_from_array_like(str(k), a)
-                          if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)  # noqa
+                          if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and
+                          not isinstance(a, sympy.Matrix)  # noqa
                           else a for (k, a) in kwargs.items()}
         # compile_kwargs['function_name'] = function.__name__
 
@@ -106,7 +105,8 @@ def crazy(function):
         # if isinstance(assignments, pystencils.AssignmentCollection):
         # assignments = pystencils_reco.AssignmentCollection(assignments)
         # is_gpu = any(isinstance(a, pycuda.gpuarray.GPUArray) for a in chain(args, kwargs.values()))
-        # kernel = assignments.compile(target='gpu' if is_gpu else 'cpu') # TODO: make accept: function_name=function.__name__
+        # TODO: make accept: function_name=function.__name__
+        # kernel = assignments.compile(target='gpu' if is_gpu else 'cpu')
         # else:
         # kernel = assignments
         # kernel_with_args = partial(kernel, *args, **kwargs)
