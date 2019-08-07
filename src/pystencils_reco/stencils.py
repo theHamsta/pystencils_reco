@@ -86,7 +86,7 @@ class BallStencil(Stencil):
         self.radius = radius
 
         stencil = []
-        circumscribing_box = BoxStencil(2*radius+1, ndim)
+        circumscribing_box = BoxStencil(2 * radius + 1, ndim)
         for s in circumscribing_box:
             norm = math.sqrt(sum(i * i for i in s))
             if norm <= radius:
