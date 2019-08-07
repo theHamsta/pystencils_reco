@@ -14,6 +14,24 @@ import sympy
 import pystencils
 from pystencils_reco.projection import forward_projection
 
+try:
+    import pyconrad.autoinit
+except Exception:
+    import unittest
+    pyconrad = unittest.mock.MagicMock()
+
+
+def test_projection_cpu():
+    volume = pystencils.fields('volume: float32[100,200,300]')
+    projections = pystencils.fields('projections: float32[2D]')
+
+    projection_matrix = sympy.Matrix([[-289.0098977737411, -1205.2274801832275, 0.0, 186000.0],
+                                      [-239.9634468375339, - 4.188577544948043, 1200.0, 144000.0],
+                                      [-0.9998476951563913, -0.01745240643728351, 0.0, 600.0]])
+
+    kernel = forward_projection(volume, projections, projection_matrix).compile()
+    print(kernel.code)
+
 
 def test_projection():
     volume = pystencils.fields('volume: float32[100,200,300]')
@@ -44,13 +62,15 @@ def test_projection():
 
 
 def project_shepp_logan():
-    import pyconrad.autoinit
     import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, GPUArray
 
-    from edu.stanford.rsl.conrad.phantom import NumericalSheppLogan3D
-    phantom3d = NumericalSheppLogan3D(100, 100, 100).getNumericalSheppLoganPhantom()
-    pyconrad.imshow(phantom3d, 'phantom')
+    try:
+        import pyconrad.autoinit
+        phantom3d = pyconrad.phantoms.shepp_logan(100, 100, 100)
+        pyconrad.imshow(phantom3d, 'phantom')
+    except Exception:
+        phantom3d = np.random.rand(30, 31, 32)
 
     m0 = sympy.Matrix([[1, 0, 0],
                        [0, 0, 1]])
@@ -82,7 +102,7 @@ def project_shepp_logan():
             kernel = kernel.compile('gpu')
             # print(kernel.code)
 
-            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
+            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d, np.float32))
             if with_spline:
                 pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(volume_gpu)
             projection_gpu = GPUArray(projections.spatial_shape, np.float32)
@@ -125,8 +145,8 @@ def project_shepp_logan():
 
 
 def main():
-    # test_projection()
-    project_shepp_logan()
+    test_projection_cpu()
+    # project_shepp_logan()
 
 
 if __name__ == '__main__':

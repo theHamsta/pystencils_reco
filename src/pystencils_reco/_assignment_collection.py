@@ -46,13 +46,16 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         if 'cpu_openmp' not in kwargs:
             kwargs['cpu_openmp'] = True
 
-        kernel = pystencils.create_kernel(self, target, *args, **kwargs).compile()
+        ast = pystencils.create_kernel(self, target, *args, **kwargs)
+        code = pystencils.show_code(ast)
+        kernel = ast.compile()
         if hasattr(self, 'args'):
             kernel = partial(kernel, *self.args)
 
         if hasattr(self, 'kwargs'):
             kernel = partial(kernel, **self.kwargs)
 
+        kernel.code = code
         return kernel
 
     def backward(self):

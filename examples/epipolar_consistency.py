@@ -12,7 +12,7 @@ from sympy import Matrix
 
 import pystencils
 import pystencils_reco
-from pystencils.astnodes import TextureCachedField
+from pystencils.interpolation_astnodes import Interpolator
 
 # def a_map(s_a1, s_a2, s_a3, p, q, r, s, t, u, t_z):
 # return -p*s_a2 + q * s_a3 - q*t_z-r
@@ -55,8 +55,8 @@ sino_a, sino_b = pystencils.fields('sino_a, sino_b: float32[2d]')
 theta = pystencils.typed_symbols('theta', 'float32')
 
 
-tex_sino_a = TextureCachedField(sino_a)
-tex_sino_b = TextureCachedField(sino_b)
+tex_sino_a = Interpolator(sino_a)
+tex_sino_b = Interpolator(sino_b)
 
 rScale, radon_width, offset_before_and_after, radon_height = sympy.symbols(
     "rScale, radon_width, offset_before_and_after, radon_heigth")

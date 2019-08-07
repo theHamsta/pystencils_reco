@@ -30,8 +30,8 @@ except ImportError:  # NOQA
 
 def test_block_matching_unrolled():
 
-    block_stencil = BallStencil(3, ndim=2)
-    matching_stencil = BallStencil(3, ndim=2)
+    block_stencil = BallStencil(2, ndim=2)
+    matching_stencil = BallStencil(2, ndim=2)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
     block_matching = block_matching_integer_offsets_unrolled(x, y, matches, block_stencil, matching_stencil)
@@ -67,7 +67,6 @@ def test_block_matching():
 
 
 def test_block_matching_gpu():
-    import pycuda.autoinit  # noqa
     from pycuda.gpuarray import to_gpu
 
     block_stencil = BallStencil(3, ndim=2)

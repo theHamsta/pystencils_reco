@@ -59,7 +59,6 @@ def test_rotation_compilation():
 
 
 def test_scaling_visualize():
-    import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
 
     x, y = pystencils.fields('x,y: float32[2d]')
@@ -98,13 +97,13 @@ def test_rotation_visualize_bspline():
 
     x, y = pystencils.fields('x,y: float32[2d]')
     s = pystencils.data_types.TypedSymbol('s', 'float32')
-    transform = rotation_transform(x, y, s, cubic_bspline_interpolation=True).compile('gpu')
+    transform = rotation_transform(x, y, s, interpolation_mode='cubic_spline').compile('gpu')
 
     test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)
     test_image = np.ascontiguousarray(test_image, np.float32)
     test_image = to_gpu(test_image)
     pyconrad.imshow(test_image, "before")
-    pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(test_image)
+    pystencils.gpucuda.texture_utils.prefilter_for_cubic_bspline(test_image)
     pyconrad.imshow(test_image, "prefiltered")
     tmp = zeros_like(test_image)
 
@@ -114,7 +113,6 @@ def test_rotation_visualize_bspline():
 
 
 def test_rotation_around_center_visualize():
-    import pyconrad.autoinit
     from pycuda.gpuarray import to_gpu, zeros_like
 
     test_image = 1 - skimage.io.imread(join(dirname(__file__), "test_data", "test_vessel2d_mask.png"), as_gray=True)

@@ -97,8 +97,7 @@ def crazy(function):
             else:
                 code = ''
             assignments = partial(assignments, **kwargs)
-            if code:
-                assignments.code = code
+            assignments.code = code
 
         return assignments
 

@@ -14,28 +14,30 @@ import sympy
 
 import pystencils
 import pystencils.astnodes
+import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
 from pystencils.autodiff import AdjointField
 from pystencils_reco import crazy
 
 
 @crazy
-def forward_projection(input_volume_field,
-                       output_projections_field,
+def forward_projection(input_volume_field: pystencils.Field,
+                       output_projections_field: pystencils.Field,
                        projection_matrix,
                        step_size=1,
                        cubic_bspline_interpolation=False):
     # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
 
-    volume_texture = pystencils.astnodes.TextureCachedField(input_volume_field,
-                                                            cubic_bspline_interpolation=cubic_bspline_interpolation)
+    interpolation_mode = 'cubic_spline' if cubic_bspline_interpolation else 'linear'
+    volume_texture = pystencils.interpolation_astnodes.Interpolator(input_volume_field,
+                                                                    interpolation_mode)
     ndim = input_volume_field.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
     t = pystencils.typed_symbols('_parametrization', 'float32')
     texture_coordinates = sympy.Matrix(pystencils.typed_symbols(f'_t:{ndim}', 'float32'))
     u = output_projections_field.physical_coordinates_staggered
-    x = input_volume_field.create_physical_coordinates(texture_coordinates)
+    x = input_volume_field.index_to_physical(texture_coordinates)
 
     is_perspective = projection_matrix.matrix.cols == ndim + 1
 

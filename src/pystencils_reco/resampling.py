@@ -23,9 +23,9 @@ def generic_spatial_matrix_transform(input_field,
                                      output_field,
                                      transform_matrix,
                                      inverse_matrix=None,
-                                     cubic_bspline_interpolation=False):
-    texture = pystencils.astnodes.TextureCachedField(input_field,
-                                                     cubic_bspline_interpolation=cubic_bspline_interpolation)
+                                     interpolation_mode='linear'):
+    texture = pystencils.interpolation_astnodes.Interpolator(input_field,
+                                                             interpolation_mode=interpolation_mode)
 
     if inverse_matrix is None:
         inverse_matrix = transform_matrix.inv()
@@ -43,7 +43,7 @@ def generic_spatial_matrix_transform(input_field,
     def create_autodiff(self, constant_fields=None):
         assignments.transform_matrix = transform_matrix
 
-        texture = pystencils.astnodes.TextureCachedField(AdjointField(output_field))
+        texture = pystencils.interpolation_astnodes.Interpolator(AdjointField(output_field))
         output_coordinate = output_field.physical_to_index(
             transform_matrix @ input_field.physical_coordinates_staggered, staggered=True)
         backward_assignments = AssignmentCollection({
@@ -56,7 +56,7 @@ def generic_spatial_matrix_transform(input_field,
 
 
 @crazy
-def scale_transform(input_field, output_field, scaling_factor):
+def scale_transform(input_field, output_field, scaling_factor, interpolation_mode='linear'):
     """scale_transform
 
     :param input_field:
@@ -69,7 +69,10 @@ def scale_transform(input_field, output_field, scaling_factor):
     else:
         transform_matrix = sympy.diag(*list([scaling_factor] * input_field.spatial_dimensions))
 
-    return generic_spatial_matrix_transform(input_field, output_field, transform_matrix)
+    return generic_spatial_matrix_transform(input_field,
+                                            output_field,
+                                            transform_matrix,
+                                            interpolation_mode=interpolation_mode)
 
 
 @crazy
@@ -77,7 +80,7 @@ def rotation_transform(input_field,
                        output_field,
                        rotation_angle,
                        rotation_axis=None,
-                       cubic_bspline_interpolation=False):
+                       interpolation_mode='linear'):
     if input_field.spatial_dimensions == 3:
         assert rotation_axis is not None, "You must specify a rotation_axis for 3d rotations!"
         transform_matrix = getattr(sympy, 'rot_axis%i' % (rotation_axis + 1))(rotation_angle)
@@ -91,11 +94,11 @@ def rotation_transform(input_field,
                                             output_field,
                                             transform_matrix,
                                             inverse_matrix=transform_matrix.T,
-                                            cubic_bspline_interpolation=cubic_bspline_interpolation)
+                                            interpolation_mode=interpolation_mode)
 
 
 @crazy
-def resample(input_field, output_field):
+def resample(input_field, output_field, interpolation_mode='linear'):
     """
     Resample input_field with its coordinate system in terms of the coordinate system of output_field
 
@@ -105,4 +108,5 @@ def resample(input_field, output_field):
 
     return generic_spatial_matrix_transform(input_field,
                                             output_field,
-                                            sympy.Matrix(sympy.Identity(input_field.spatial_dimensions)))
+                                            sympy.Matrix(sympy.Identity(input_field.spatial_dimensions)),
+                                            interpolation_mode=interpolation_mode)
