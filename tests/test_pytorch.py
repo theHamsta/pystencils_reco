@@ -28,7 +28,7 @@ def test_pytorch():
     x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=False)
     y_tensor = torch_tensor_from_field(y, cuda=False)
 
-    torch_op = filter.create_pytorch_op(x=x_tensor+1, y=y_tensor)
+    torch_op = filter.create_pytorch_op(x=x_tensor + 1, y=y_tensor)
     print(torch_op)
 
 
@@ -43,7 +43,7 @@ def test_pytorch_gpu():
     x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=True)
     y_tensor = torch_tensor_from_field(y, cuda=True)
 
-    torch_op = filter.create_pytorch_op(x=x_tensor+1, y=y_tensor)
+    torch_op = filter.create_pytorch_op(x=x_tensor + 1, y=y_tensor)
     print(torch_op)
 
 
@@ -91,8 +91,8 @@ def test_projection():
 def main():
     # test_pytorch()
     # test_pytorch_from_tensors()
-    # test_texture()
-    test_projection()
+    test_texture()
+    # test_projection()
 
 
 if __name__ == '__main__':

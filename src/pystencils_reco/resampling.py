@@ -14,6 +14,7 @@ from collections.abc import Iterable
 import sympy
 
 import pystencils
+import pystencils_autodiff
 from pystencils_autodiff import AdjointField
 from pystencils_reco import AssignmentCollection, crazy
 
@@ -43,7 +44,8 @@ def generic_spatial_matrix_transform(input_field,
     def create_autodiff(self, constant_fields=None):
         assignments.transform_matrix = transform_matrix
 
-        texture = pystencils.interpolation_astnodes.Interpolator(AdjointField(output_field))
+        texture = pystencils.interpolation_astnodes.Interpolator(
+            AdjointField(output_field), interpolation_mode=interpolation_mode)
         output_coordinate = output_field.physical_to_index(
             transform_matrix @ input_field.physical_coordinates_staggered, staggered=True)
         backward_assignments = AssignmentCollection({

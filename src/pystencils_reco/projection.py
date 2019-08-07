@@ -17,6 +17,7 @@ import pystencils.astnodes
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
 from pystencils_autodiff import AdjointField
+import pystencils_autodiff
 from pystencils_reco import crazy
 
 

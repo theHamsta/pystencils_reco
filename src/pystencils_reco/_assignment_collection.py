@@ -11,7 +11,6 @@
 from functools import partial
 
 import pystencils.assignment_collection
-import pystencils_autodiff
 
 # TODO: find good name to differentiate from conventional pystencils.AssignmentCollection... Perhaps ImageFilter?
 
@@ -73,5 +72,6 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch_native')
 
     def _create_autodiff(self, constant_fields=[]):
+        import pystencils_autodiff
         self._autodiff = pystencils_autodiff.AutoDiffOp(
             self, operation_name="", constant_fields=constant_fields)
