@@ -14,8 +14,6 @@ from typing import Tuple, Union
 
 import pampy
 
-from pystencils.stencils import *  # NOQA
-
 
 class Stencil(list):
     """Implements an Iterable of relative accesses on a Field"""
