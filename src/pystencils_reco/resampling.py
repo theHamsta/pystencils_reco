@@ -24,7 +24,6 @@ def generic_spatial_matrix_transform(input_field,
                                      transform_matrix,
                                      inverse_matrix=None,
                                      cubic_bspline_interpolation=False):
-    import pycuda.driver
     texture = pystencils.astnodes.TextureCachedField(input_field,
                                                      cubic_bspline_interpolation=cubic_bspline_interpolation)
 
