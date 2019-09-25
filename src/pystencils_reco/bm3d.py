@@ -8,7 +8,6 @@
 
 """
 # import pycuda.gpuarray as gpuarray
-import pystencils
 import pystencils_reco
 from pystencils import Field
 from pystencils_reco.block_matching import block_matching_integer_offsets
