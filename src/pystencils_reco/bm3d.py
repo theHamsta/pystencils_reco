@@ -80,7 +80,7 @@ class Bm3d:
         self.hard_thresholding = hard_thresholding(
             complex_field, group_weights, hard_threshold).compile(compilation_target)
         if not wiener_sigma:
-            wiener_sigma = pystencils.typed_symbols('wiener_sigma', input_field.dtype.numpy_dtype)
+            wiener_sigma = pystencils_reco.typed_symbols('wiener_sigma', input_field.dtype.numpy_dtype)
         wiener_coefficients = Field.create_fixed_size('wiener_coefficients',
                                                       block_matched_shape,
                                                       index_dimensions=2,

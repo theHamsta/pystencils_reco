@@ -114,7 +114,7 @@ def project_shepp_logan():
 
     for with_spline in (False, True):
         for i, projection_matrix in enumerate((m0, m1, m2, m3)):
-            angle = pystencils.typed_symbols('angle', 'float32')
+            angle = pystencils_reco.typed_symbols('angle', 'float32')
 
             volume = pystencils.fields('volume: float32[100,100,100]')
             projections = pystencils.fields('projections: float32[1024,960]')

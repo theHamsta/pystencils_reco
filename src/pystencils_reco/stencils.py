@@ -12,6 +12,7 @@ import itertools
 import math
 from typing import Tuple, Union
 
+
 class Stencil(list):
     """Implements an Iterable of relative accesses on a Field"""
 

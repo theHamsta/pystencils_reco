@@ -90,7 +90,7 @@ def generic_stationary_filter(input_field: pystencils.Field,
 
     assignments = AssignmentCollection({
         output_field.center(): sum / weights if normalize_weights else sum
-    }, {})
+    })
 
     return assignments
 

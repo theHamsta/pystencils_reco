@@ -14,8 +14,8 @@ from collections.abc import Iterable
 import sympy
 
 import pystencils
-import pystencils_autodiff
-from pystencils_autodiff import AdjointField
+import pystencils.autodiff
+from pystencils.autodiff import AdjointField
 from pystencils_reco import AssignmentCollection, crazy
 
 
@@ -51,7 +51,7 @@ def generic_spatial_matrix_transform(input_field,
         backward_assignments = AssignmentCollection({
             AdjointField(input_field).center(): texture.at(output_coordinate)
         })
-        self._autodiff = pystencils_autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
 
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
     return assignments

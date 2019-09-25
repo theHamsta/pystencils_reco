@@ -72,6 +72,6 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch_native')
 
     def _create_autodiff(self, constant_fields=[]):
-        import pystencils_autodiff
-        self._autodiff = pystencils_autodiff.AutoDiffOp(
+        import pystencils.autodiff
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
             self, operation_name="", constant_fields=constant_fields)

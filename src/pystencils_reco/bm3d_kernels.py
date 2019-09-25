@@ -19,7 +19,7 @@ from pystencils_reco.astnodes import Select
 
 
 def _get_dummy_symbol(dtype=None):
-    return pystencils.typed_symbols('dummy%s' % uuid.uuid4().hex, dtype or create_type('bool'))
+    return pystencils_reco.typed_symbols('dummy%s' % uuid.uuid4().hex, dtype or create_type('bool'))
 
 
 @crazy
@@ -36,13 +36,13 @@ def collect_patches(block_scores: Field,
     max_offset = max(max(o) for o in matching_stencil)
     max_offset += max(max(o) for o in block_stencil)
 
-    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
+    offset = pystencils_reco.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
     copies = []
 
     assert destination_field.index_dimensions == 2
     assert destination_field.index_shape[-1] == len(block_stencil)
 
-    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
+    n, nth_hit = pystencils_reco.typed_symbols('_n, nth_hit', 'int32')
     for i, s in enumerate(block_stencil):
         shifted = tuple(s + o for s, o in zip(offset, s))
         copies.append(pystencils.Assignment(destination_field.center(nth_hit, i), patch_input_field[shifted]))
@@ -80,13 +80,13 @@ def aggregate(block_scores: Field,
     max_offset = max(max(o) for o in matching_stencil)
     max_offset += max(max(o) for o in block_stencil)
 
-    offset = pystencils.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
+    offset = pystencils_reco.typed_symbols('_o:%i' % patch_input_field.spatial_dimensions, 'int32')
     copies = []
 
     assert destination_field.index_dimensions == 2
     assert destination_field.index_shape[-1] == len(block_stencil)
 
-    n, nth_hit = pystencils.typed_symbols('_n, nth_hit', 'int32')
+    n, nth_hit = pystencils_reco.typed_symbols('_n, nth_hit', 'int32')
     for i, s in enumerate(block_stencil):
         shifted = tuple(s + o for s, o in zip(offset, s))
         weight = patch_weights.center(nth_hit) if patch_weights else 1

@@ -113,8 +113,8 @@ def test_combination_single_block_matching():
     matching_stencil = BallStencil(5, ndim=2)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
-    offset = pystencils.typed_symbols('o:2', 'int32')
-    i = pystencils.typed_symbols('i', 'int32')
+    offset = pystencils_reco.typed_symbols('o:2', 'int32')
+    i = pystencils_reco.typed_symbols('i', 'int32')
     print(len(matching_stencil))
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     print('backward')
@@ -128,8 +128,8 @@ def test_for_each():
     matching_stencil = BallStencil(3, ndim=2)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[2d]' % len(matching_stencil))
-    offset = pystencils.typed_symbols('o:2', 'int32')
-    i = pystencils.typed_symbols('i', 'int32')
+    offset = pystencils_reco.typed_symbols('o:2', 'int32')
+    i = pystencils_reco.typed_symbols('i', 'int32')
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)
@@ -143,8 +143,8 @@ def test_for_each_3d():
     matching_stencil = BallStencil(1, ndim=3)
 
     x, y, matches = pystencils.fields('x,y, matches(%i): float32[3d]' % len(matching_stencil))
-    offset = pystencils.typed_symbols('o:3', 'int32')
-    i = pystencils.typed_symbols('i', 'int32')
+    offset = pystencils_reco.typed_symbols('o:3', 'int32')
+    i = pystencils_reco.typed_symbols('i', 'int32')
     block_matching = single_block_matching(x, y, matches, block_stencil, offset, i)
     ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)

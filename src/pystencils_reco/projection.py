@@ -16,8 +16,8 @@ import pystencils
 import pystencils.astnodes
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
-from pystencils_autodiff import AdjointField
-import pystencils_autodiff
+from pystencils.autodiff import AdjointField
+import pystencils.autodiff
 from pystencils_reco import crazy
 
 
@@ -35,15 +35,15 @@ def forward_projection(input_volume_field: pystencils.Field,
     ndim = input_volume_field.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
-    t = pystencils.typed_symbols('_parametrization', 'float32')
-    texture_coordinates = sympy.Matrix(pystencils.typed_symbols(f'_t:{ndim}', 'float32'))
+    t = pystencils_reco.typed_symbols('_parametrization', 'float32')
+    texture_coordinates = sympy.Matrix(pystencils_reco.typed_symbols(f'_t:{ndim}', 'float32'))
     u = output_projections_field.physical_coordinates_staggered
     x = input_volume_field.index_to_physical(texture_coordinates)
 
     is_perspective = projection_matrix.matrix.cols == ndim + 1
 
     if is_perspective:
-        eqn = projection_matrix @ sympy.Matrix([*x, 1]) - sympy.Matrix([*(t*u), t])
+        eqn = projection_matrix @ sympy.Matrix([*x, 1]) - sympy.Matrix([*(t * u), t])
     else:
         # this also works for perspective/cone beam projection (but may lead to instable parametrization)
         eqn = projection_matrix @ x - u
@@ -122,7 +122,7 @@ def forward_projection(input_volume_field: pystencils.Field,
                                                    AdjointField(input_volume_field),
                                                    projection_matrix,
                                                    1)
-        self._autodiff = pystencils_autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
 
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
 

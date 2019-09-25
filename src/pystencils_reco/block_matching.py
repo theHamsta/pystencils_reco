@@ -85,8 +85,8 @@ def block_matching_integer_offsets(input_field: Field,
     max_offset = max(max(o) for o in matching_stencil)
     max_offset += max(max(o) for o in block_stencil)
 
-    offset = pystencils.typed_symbols('_o:%i' % input_field.spatial_dimensions, 'int32')
-    i = pystencils.typed_symbols('_i', 'int32')
+    offset = pystencils_reco.typed_symbols('_o:%i' % input_field.spatial_dimensions, 'int32')
+    i = pystencils_reco.typed_symbols('_i', 'int32')
     block_matching = single_block_matching(input_field, comparision_field,
                                            output_block_scores, block_stencil, offset, i, matching_function)
     ast = pystencils.create_kernel(block_matching, target=compilation_target,

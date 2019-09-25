@@ -52,7 +52,7 @@ def get_rotation_matrix(angle, axis):
 
 
 sino_a, sino_b = pystencils.fields('sino_a, sino_b: float32[2d]')
-theta = pystencils.typed_symbols('theta', 'float32')
+theta = pystencils_reco.typed_symbols('theta', 'float32')
 
 
 tex_sino_a = Interpolator(sino_a)
@@ -61,12 +61,12 @@ tex_sino_b = Interpolator(sino_b)
 rScale, radon_width, offset_before_and_after, radon_height = sympy.symbols(
     "rScale, radon_width, offset_before_and_after, radon_heigth")
 
-P_A, P_B, S_A, S_B = pystencils.matrix_symbols("P_A, P_B, S_A, S_B", 'float32', 3, 4)
+P_A, P_B, S_A, S_B = pystencils_reco.matrix_symbols("P_A, P_B, S_A, S_B", 'float32', 3, 4)
 
 cam_a, cam_b = P_A, P_B
 
-sp_a, sp_b = sympy.Matrix(pystencils.typed_symbols('s_a:4', 'float32')
-                          ), sympy.Matrix(pystencils.typed_symbols('s_b:4', 'float32'))
+sp_a, sp_b = sympy.Matrix(pystencils_reco.typed_symbols('s_a:4', 'float32')
+                          ), sympy.Matrix(pystencils_reco.typed_symbols('s_b:4', 'float32'))
 
 baseline = Matrix(sp_a[:-1]) - Matrix(sp_b[:-1])
 ortho_baseline = baseline.cross(sympy.Matrix([0, 0, 1]).T)
@@ -151,7 +151,7 @@ print(v_a)
 # consval.spatial_shape[0]
 
 consval = pystencils.fields('consval: [1d]')
-d, tex_u_a, tex_v_a, tex_u_b, tex_v_b = pystencils.typed_symbols('d, u_a, v_a, u_b, v_b', 'float32')
+d, tex_u_a, tex_v_a, tex_u_b, tex_v_b = pystencils_reco.typed_symbols('d, u_a, v_a, u_b, v_b', 'float32')
 
 d_val = tex_sino_a.at(Matrix([tex_u_a, tex_v_a])) - tex_sino_b.at(Matrix([tex_u_b, tex_v_b]))
 consistency_value = d * d / (1 + d**2)
