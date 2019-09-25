@@ -62,7 +62,7 @@ def collect_patches(block_scores: Field,
                        hit_counter_symbol=nth_hit,
                        max_selected=max_selected,
                        compilation_target=compilation_target)
-    return pystencils.make_python_function(ast, target=compilation_target)
+    return ast.compile()
 
 
 @crazy
@@ -92,18 +92,19 @@ def aggregate(block_scores: Field,
         shifted = tuple(s + o for s, o in zip(offset, s))
         weight = patch_weights.center(nth_hit) if patch_weights else 1
 
-        assignment = pystencils.Assignment(get_dummy_symbol(),
+        assignment = pystencils.Assignment(_get_dummy_symbol(),
                                            sympy.Function('atomicAdd')(address_of(patch_input_field[shifted]),
                                                                        weight * destination_field.center(nth_hit, i)))
         copies.append(assignment)
         if accumulated_weights:
-            assignment = pystencils.Assignment(get_dummy_symbol(),
+            assignment = pystencils.Assignment(_get_dummy_symbol(),
                                                sympy.Function('atomicAdd')(
                                                    address_of(accumulated_weights[shifted]), weight))
             copies.append(assignment)
 
     assignments = AssignmentCollection(copies)
-    ast = pystencils.create_kernel(assignments, target=compilation_target,
+    ast = pystencils.create_kernel(assignments,
+                                   target=compilation_target,
                                    data_type=patch_input_field.dtype,
                                    ghost_layers=max_offset,
                                    **compilation_kwargs)
@@ -116,7 +117,7 @@ def aggregate(block_scores: Field,
                        hit_counter_symbol=nth_hit,
                        compilation_target=compilation_target,
                        max_selected=max_selected)
-    return pystencils.make_python_function(ast, target=compilation_target)
+    return ast.compile()
 
 
 @crazy
