@@ -61,7 +61,7 @@ class BoxStencil(Stencil):
         if isinstance(kernel_size, int):
             stencil = itertools.product(range(-(kernel_size // 2), -(kernel_size // 2) + kernel_size), repeat=ndim)
         else:
-            itertools.product(*[range(-(i // 2), -(i // 2) + i) for i in kernel_size])
+            stencil = itertools.product(*[range(-(i // 2), -(i // 2) + i) for i in kernel_size])
 
         if isinstance(kernel_size, int):
             kernel_size = [kernel_size] * ndim
