@@ -49,3 +49,4 @@ MANIFEST
 .venv*/
 
 test-report
+htmlcov
