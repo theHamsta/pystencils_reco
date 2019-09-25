@@ -16,6 +16,7 @@ from tqdm import trange
 
 import pystencils
 import pystencils.gpucuda.cudajit
+import pystencils_reco
 from pystencils_reco.astnodes import ForEach
 from pystencils_reco.block_matching import (
     block_matching_integer_offsets, block_matching_integer_offsets_unrolled,
@@ -134,8 +135,8 @@ def test_for_each():
     ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)
     # ast = ForLoop(ast.body,  i, 0, 10, 2)
+    print(pystencils.show_code(ast))
     kernel = pystencils.gpucuda.cudajit.make_python_function(ast)
-    print(kernel.code)
 
 
 def test_for_each_3d():
@@ -149,17 +150,8 @@ def test_for_each_3d():
     ast = pystencils.create_kernel(block_matching, target='gpu', data_type='float', ghost_layers=0)
     ast._body = ForEach(ast.body, offset, matching_stencil, i)
     # ast = ForLoop(ast.body,  i, 0, 10, 2)
+    print(pystencils.show_code(ast))
     kernel = pystencils.gpucuda.cudajit.make_python_function(ast)
-    print(kernel.code)
-    # kernel = block_matching.compile('gpu', ghost_layers=0)
-    # print(kernel.code)
-    # print('forward')
-    # backward = block_matching.backward()
-    # print(backward)
-    # backward_kernel = backward.compile('gpu', ghost_layers=0)
-
-    # print(backward_kernel.code)
-    # print('backward')
 
 
 def test_block_matching_unrolled_gpu():
@@ -182,15 +174,3 @@ def test_block_matching_unrolled_gpu():
     pyconrad.imshow(test_image, 'original')
     pyconrad.imshow(test_image, 'compare')
     pyconrad.imshow(np.swapaxes(result.get(), 0, -1), 'result')
-
-
-def main():
-    test_block_matching_gpu()
-    # test_combination_single_block_matching()
-    # test_block_matching_gpu()
-    # test_larger_blocks()
-    # test_for_each()
-
-
-if __name__ == '__main__':
-    main()

@@ -15,6 +15,7 @@ from functools import partial
 import sympy
 
 import pycuda.gpuarray
+import pystencils
 from pystencils.field import Field
 
 try:
@@ -83,14 +84,11 @@ def crazy(function):
         assignments = function(*compile_args, **compile_kwargs)
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
-        if torch:
-            is_torch = all(isinstance(a, torch.Tensor) if hasattr(a, '__array__')
-                           or isinstance(a, Field) and not isinstance(a, sympy.Matrix) else a for a in args)
-            if is_torch:
-                return assignments.create_pytorch_op(**kwargs)
 
         assignments.kwargs = kwargs
 
+        if isinstance(assignments, pystencils.cpu.cpujit.KernelWrapper):
+            assignments.code = str(pystencils.show_code(assignments.ast))
         if isinstance(assignments, types.FunctionType):
             if hasattr(assignments, 'code'):
                 code = assignments.code
