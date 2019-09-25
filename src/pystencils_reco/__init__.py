@@ -17,7 +17,7 @@ finally:
 
 
 __all__ = ['AssignmentCollection',
- 'crazy',
- 'ProjectiveMatrix',
- 'matrix_symbols',
- 'typed_symbols']
+           'crazy',
+           'ProjectiveMatrix',
+           'matrix_symbols',
+           'typed_symbols']
