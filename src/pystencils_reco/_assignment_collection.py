@@ -18,7 +18,9 @@ import pystencils.assignment_collection
 class AssignmentCollection(pystencils.AssignmentCollection):
     """
     A high-level wrapper around pystencils.AssignmentCollection that provides some convenience methods
-    for simpler usage in the field of image/volume processing
+    for simpler usage in the field of image/volume processing.
+
+    Better defaults for Image Processing.
     """
 
     def __init__(self, assignments, perform_cse=True, *args, **kwargs):
