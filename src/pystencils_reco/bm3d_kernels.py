@@ -12,6 +12,7 @@ import uuid
 import sympy
 
 import pystencils
+import pystencils_reco
 from pystencils import Field
 from pystencils.data_types import address_of, create_type
 from pystencils_reco import AssignmentCollection, crazy
