@@ -64,14 +64,29 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             self._create_autodiff()
         return AssignmentCollection(self._autodiff.backward_assignments)
 
-    def create_pytorch_op(self, **field_name_kwargs):
-        input_field_to_tensor_map = {f: field_name_kwargs[f.name] for f in self.free_fields}
-        constant_fields = [f for f, t in input_field_to_tensor_map.items() if not t.requires_grad]
+    def create_pytorch_op(self, target='gpu', **kwargs):
+        return self._create_ml_op('torch_native', target, **kwargs)
+
+    def create_tensorflow_op(self, target='gpu', **kwargs):
+        return self._create_ml_op('tensorflow_native', target, **kwargs)
+
+    def _create_ml_op(self, backend, target, **kwargs):
+        constant_field_names = [f for f, t in kwargs.items()
+                                if hasattr(t, 'requires_grad') and not t.requires_grad]
+        constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
 
         if not self._autodiff:
             self._create_autodiff(constant_fields)
 
-        return self._autodiff.create_tensorflow_op(input_field_to_tensor_map, backend='torch_native')
+        op = self._autodiff.create_tensorflow_op(backend=backend, use_cuda=(target == 'gpu'))
+
+        if hasattr(self, 'args'):
+            op = partial(op, *self.args)
+
+        if hasattr(self, 'kwargs'):
+            op = partial(op, **self.kwargs)
+
+        return op
 
     def _create_autodiff(self, constant_fields=[]):
         import pystencils.autodiff
