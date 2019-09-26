@@ -12,6 +12,7 @@ import numpy as np
 import sympy
 
 import pystencils
+import pystencils_reco
 from pystencils_reco.projection import forward_projection
 
 try:
@@ -61,7 +62,7 @@ def test_projection():
     print(kernel.code)
 
 
-def project_shepp_logan():
+def test_project_shepp_logan():
     import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, GPUArray
 
@@ -104,7 +105,7 @@ def project_shepp_logan():
 
             volume_gpu = to_gpu(np.ascontiguousarray(phantom3d, np.float32))
             if with_spline:
-                pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(volume_gpu)
+                pystencils.gpucuda.texture_utils.prefilter_for_cubic_bspline(volume_gpu)
             projection_gpu = GPUArray(projections.spatial_shape, np.float32)
 
             kernel(volume=volume_gpu, projections=projection_gpu)
@@ -133,21 +134,12 @@ def project_shepp_logan():
             kernel = kernel.compile('gpu')
             # print(kernel.code)
 
-            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d.as_numpy(), np.float32))
+            volume_gpu = to_gpu(np.ascontiguousarray(phantom3d, np.float32))
             if with_spline:
-                pystencils.gpucuda.cudajit.prefilter_for_cubic_bspline(volume_gpu)
+                pystencils.gpucuda.texture_utils.prefilter_for_cubic_bspline(volume_gpu)
             projection_gpu = GPUArray(projections.spatial_shape, np.float32)
 
             for phi in np.arange(0, np.pi, np.pi / 100):
                 kernel(volume=volume_gpu, projections=projection_gpu, angle=phi)
                 pyconrad.imshow(projection_gpu, 'rotation!' + str(with_spline))
             pyconrad.close_all_windows()
-
-
-def main():
-    test_projection_cpu()
-    # project_shepp_logan()
-
-
-if __name__ == '__main__':
-    main()
