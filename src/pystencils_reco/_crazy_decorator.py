@@ -18,24 +18,18 @@ import pycuda.gpuarray
 import pystencils
 from pystencils.field import Field
 
-try:
-    from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
-except Exception:
-    pass
+# try:
+# from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
+# except Exception:
+# pass
 
-try:
-    import torch
-except ModuleNotFoundError:
-    torch = None
-except ImportError:
-    torch = None
 
-try:
-    import tensorflow as tf
-except ModuleNotFoundError:
-    tf = None
-except ImportError:
-    tf = None
+# try:
+# import tensorflow as tf
+# except ModuleNotFoundError:
+# tf = None
+# except ImportError:
+# tf = None
 
 
 class _WhatEverClass:
@@ -44,10 +38,17 @@ class _WhatEverClass:
 
 
 def _create_field_from_array_like(field_name, maybe_array):
+    try:
+        import torch
+    except ModuleNotFoundError:
+        torch = None
+    except ImportError:
+        torch = None
 
     if torch:
         # Torch tensors don't have t.strides but t.stride(dim). Let's fix that!
         if isinstance(maybe_array, torch.Tensor):
+            from pystencils.autodiff.backends._pytorch import torch_dtype_to_numpy
             fake_array = _WhatEverClass(
                 strides=[maybe_array.stride(i) for i in range(len(maybe_array.shape))],
                 shape=maybe_array.shape,
