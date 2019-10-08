@@ -7,8 +7,8 @@
 """
 
 """
-from pystencils_reco import ProjectiveMatrix
 import sympy
+from pystencils_reco import ProjectiveMatrix
 
 
 def test_projective_matrix():
@@ -44,11 +44,3 @@ def test_projective_matrix():
         print(f"{k}: {v}")
 
     print(projection_matrix.nullspace())
-
-
-def main():
-    test_projective_matrix()
-
-
-if __name__ == '__main__':
-    main()

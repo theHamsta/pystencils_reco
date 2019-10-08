@@ -53,15 +53,3 @@ def test_strided():
 def test_BoxStencil_non_quadratic():
     stencil = BoxStencil((3, 5))
     print(stencil)
-
-
-def main():
-    test_LineStencil()
-    test_BoxStencil()
-    test_BallStencil()
-    test_BoxStencil_non_quadratic()
-    test_strided()
-
-
-if __name__ == '__main__':
-    main()

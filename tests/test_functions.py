@@ -7,9 +7,8 @@
 """
 
 """
-from sympy import Matrix, Symbol, symbols
-
 import pystencils_reco.functions
+from sympy import Matrix, Symbol, symbols
 
 
 def test_functions():
@@ -27,11 +26,3 @@ def test_functions():
     gaussian = pystencils_reco.functions.gaussian(
         (x, y, z), sigma=Matrix(3, 3, lambda i, j: sigmas[i] if i == j else 0))
     print(gaussian)
-
-
-def main():
-    test_functions()
-
-
-if __name__ == '__main__':
-    main()

@@ -15,11 +15,11 @@ import pystencils
 import pystencils_reco
 from pystencils_reco.projection import forward_projection
 
-try:
-    import pyconrad.autoinit
-except Exception:
-    import unittest
-    pyconrad = unittest.mock.MagicMock()
+# try:
+    # import pyconrad.autoinit
+# except Exception:
+    # import unittest
+    # pyconrad = unittest.mock.MagicMock()
 
 
 def test_projection_cpu():

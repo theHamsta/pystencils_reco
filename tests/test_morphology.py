@@ -68,12 +68,3 @@ def test_visualize_morphology():
     # erosion(x=test_image, y=tmp)
     # tmp, test_image = test_image, tmp
     # pyconrad.imshow(test_image, str(i))
-
-
-def main():
-    # test_morphology()
-    test_visualize_morphology()
-
-
-if __name__ == '__main__':
-    main()

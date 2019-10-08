@@ -130,18 +130,3 @@ def test_rotation_around_center_visualize():
     for s in (0, 0.2, 0.5, 0.7, 1, 2):
         transform(x=test_image, y=tmp, s=s)
         pyconrad.imshow(tmp.get(), str(s))
-
-
-def main():
-    # test_scaling()
-    # test_rotation()
-    # test_scaling_compilation()
-    # test_rotation_compilation()
-    # test_scaling_visualize()
-    test_rotation_visualize()
-    test_rotation_visualize_bspline()
-    # test_rotation_around_center_visualize()
-
-
-if __name__ == '__main__':
-    main()

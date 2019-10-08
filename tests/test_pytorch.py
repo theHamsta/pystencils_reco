@@ -7,10 +7,9 @@
 """
 
 """
-import sympy
-
 import pystencils
 import pystencils_reco.resampling
+import sympy
 from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
@@ -87,14 +86,3 @@ def test_projection():
     kernel = assignments.create_pytorch_op(volume=x_tensor, projections=y_tensor)
     print(assignments)
     print(kernel)
-
-
-def main():
-    # test_pytorch()
-    # test_pytorch_from_tensors()
-    test_texture()
-    # test_projection()
-
-
-if __name__ == '__main__':
-    main()

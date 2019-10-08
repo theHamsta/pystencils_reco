@@ -11,15 +11,16 @@ import os
 
 import numpy as np
 import pytest
-import sympy
 
 import pystencils
 import pystencils.simp
 import pystencils_reco.filters
+import sympy
 from pystencils_reco.stencils import BoxStencil
 
 try:
-    import pyconrad.autoinit
+    # import pyconrad.autoinit
+    raise ImportError()
 except ImportError:  # NOQA
     from unittest.mock import MagicMock
     pyconrad = MagicMock()
@@ -52,11 +53,29 @@ def test_mean_filter_with_crazy_compilation():
     y = np.zeros_like(x)
 
     assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
-    kernel = assignments.compile('gpu')
-    print(kernel.code)
-    kernel = assignments.compile('cpu')
-    if hasattr(kernel, 'code'):
-        print(kernel.code)
+    assignments.compile('gpu')
+    assignments.compile('cpu')()
+
+
+def test_mean_filter_with_crazy_torch():
+    torch = pytest.importorskip('torch')
+    x = torch.rand((20, 30))
+    y = torch.zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    ab = assignments.create_pytorch_op()
+    ab()
+    assignments.compile()()
+
+
+def test_crazy_target_detection():
+    to_gpu = pytest.importorskip('pycuda.gpuarray').to_gpu
+    zeros_like = pytest.importorskip('pycuda.gpuarray').zeros_like
+    x = to_gpu(np.random.rand(20, 30))
+    y = zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    assignments.compile()()
 
 
 def test_mean_filter_evaluation():
@@ -152,17 +171,3 @@ def test_gauss_filter_evaluation():
     kernel = pystencils_reco.filters.gauss_filter(
         x, y, BoxStencil(3, ndim=2, with_center=False), sigma=sympy.Symbol('a')).compile()
     kernel(x=x_array[0], y=y_array[0], a=0.7)
-
-
-def main():
-    test_mean_filter()
-    test_mean_filter_evaluation()
-    test_mean_filter_evaluation_gpu()
-    test_visualize_mean_filter()
-
-    test_gauss_filter()
-    test_gauss_filter_evaluation()
-
-
-if __name__ == '__main__':
-    main()

@@ -9,13 +9,10 @@
 """
 
 import inspect
-import types
-from functools import partial
 
-import sympy
-
-import pycuda.gpuarray
 import pystencils
+import pystencils_reco
+import sympy
 from pystencils.field import Field
 
 # try:
@@ -66,12 +63,14 @@ def coerce_to_field(field_name, array_like):
 
 
 def is_array_like(a):
+    import pycuda.gpuarray
     return (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and not isinstance(a, sympy.Matrix)
 
 
 def crazy(function):
 
     def wrapper(*args, **kwargs):
+        import pycuda.gpuarray
         arg_names = inspect.getfullargspec(function).args
         compile_args = [_create_field_from_array_like(arg_names[i], a)
                         if is_array_like(a)
@@ -86,31 +85,12 @@ def crazy(function):
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
 
+        if (isinstance(assignments, pystencils.AssignmentCollection) and
+                not isinstance(assignments, pystencils_reco.AssignmentCollection)):
+            assignments = pystencils_reco.AssignmentCollection(assignments)
+
         assignments.kwargs = kwargs
 
-        if isinstance(assignments, pystencils.cpu.cpujit.KernelWrapper):
-            assignments.code = str(pystencils.show_code(assignments.ast))
-        if isinstance(assignments, types.FunctionType):
-            if hasattr(assignments, 'code'):
-                code = assignments.code
-            else:
-                code = ''
-            assignments = partial(assignments, **kwargs)
-            assignments.code = code
-
         return assignments
-
-        # if isinstance(assignments, pystencils.AssignmentCollection):
-        # assignments = pystencils_reco.AssignmentCollection(assignments)
-        # is_gpu = any(isinstance(a, pycuda.gpuarray.GPUArray) for a in chain(args, kwargs.values()))
-        # TODO: make accept: function_name=function.__name__
-        # kernel = assignments.compile(target='gpu' if is_gpu else 'cpu')
-        # else:
-        # kernel = assignments
-        # kernel_with_args = partial(kernel, *args, **kwargs)
-        # if hasattr(kernel, 'code'):
-        # kernel_with_args.code = kernel.code
-        # kernel_with_args.assignments = assignments
-        # return kernel_with_args
 
     return wrapper

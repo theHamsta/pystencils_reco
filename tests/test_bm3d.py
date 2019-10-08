@@ -8,12 +8,6 @@
 
 """
 
-try:
-    import pyconrad.autoinit
-    raise NotImplementedError()
-except:  # NOQA
-    import unittest.mock
-    pyconrad = unittest.mock.MagicMock()
 
 from os.path import dirname, join
 
@@ -21,14 +15,21 @@ import numpy as np
 import pytest
 import skimage.io
 
-import pycuda.autoinit  # noqa
-from pycuda.gpuarray import to_gpu, zeros
 from pystencils_reco.bm3d import Bm3d
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
 
 @pytest.mark.skip(reason="")
 def test_bm3d():
+    pytest.importorskip('pycuda')
+    import pycuda.autoinit  # noqa
+    try:
+        import pyconrad.autoinit
+    except:  # NOQA
+        import unittest.mock
+        pyconrad = unittest.mock.MagicMock()
+
+    from pycuda.gpuarray import to_gpu, zeros
     lenna_file = join(dirname(__file__), "test_data", "lenna.png")
     lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
 
@@ -36,7 +37,6 @@ def test_bm3d():
     lenna_denoised = np.zeros_like(lenna)
     ndim = 2
 
-    global pyconrad
     pyconrad.imshow(lenna, 'lenna')
     pyconrad.imshow(lenna_noisy, 'lenna_noisy')
     lenna = to_gpu(lenna)
@@ -104,11 +104,3 @@ def test_bm3d():
     bm3d.aggregate(block_scores=block_scores, block_matched=reshaped, group_weights=weights, accumulated_weights=lenna)
     lenna_denoised /= lenna
     pyconrad.imshow(lenna_denoised, 'denoised')
-
-
-def main():
-    test_bm3d()
-
-
-if __name__ == '__main__':
-    main()

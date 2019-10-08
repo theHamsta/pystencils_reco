@@ -8,11 +8,47 @@
 
 """
 
+from enum import Enum
 from functools import partial
+from itertools import chain
 
 import pystencils.assignment_collection
 
-# TODO: find good name to differentiate from conventional pystencils.AssignmentCollection... Perhaps ImageFilter?
+
+class NdArrayType(str, Enum):
+    UNKNOWN = None
+    TORCH = 'torch'
+    TENSORFLOW = 'tensorflow'
+    NUMPY = 'numpy'
+    PYCUDA = 'pycuda'
+
+
+def get_type_of_arrays(*args):
+    try:
+        from pycuda.gpuarray import GPUArray
+        if any(isinstance(a, GPUArray) for a in args):
+            return NdArrayType.PYCUDA
+    except Exception:
+        pass
+    try:
+        import torch
+        if any(isinstance(a, torch.Tensor) for a in args):
+            return NdArrayType.TORCH
+    except Exception as e:
+        print(e)
+    try:
+        from tensorflow import Tensor
+        if any(isinstance(a, Tensor) for a in args):
+            return NdArrayType.TENSORFLOW
+    except Exception:
+        pass
+    try:
+        if any(hasattr(a, '__array__') for a in args):
+            return NdArrayType.NUMPY
+    except Exception:
+        pass
+
+    return NdArrayType.UNKNOWN
 
 
 class AssignmentCollection(pystencils.AssignmentCollection):
@@ -21,6 +57,9 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     for simpler usage in the field of image/volume processing.
 
     Better defaults for Image Processing.
+
+    .. todo::
+        find good name to differentiate from conventional pystencils.AssignmentCollection... Perhaps ImageFilter?
     """
 
     def __init__(self, assignments, perform_cse=True, *args, **kwargs):
@@ -34,9 +73,12 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
             assignments = pystencils.simp.sympy_cse(assignments)
         super(AssignmentCollection, self).__init__(assignments.all_assignments, {}, *args, **kwargs)
+        self.args = []
+        self.kwargs = {}
         self._autodiff = None
+        self.kernel = None
 
-    def compile(self, target='cpu', *args, **kwargs):
+    def compile(self, target=None, *args, **kwargs):
         """Convenience wrapper for pystencils.create_kernel(...).compile()
         See :func: ~pystencils.create_kernel
         """
@@ -47,22 +89,40 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         if 'cpu_openmp' not in kwargs:
             kwargs['cpu_openmp'] = True
 
-        ast = pystencils.create_kernel(self, target, *args, **kwargs)
-        code = pystencils.show_code(ast)
-        kernel = ast.compile()
-        if hasattr(self, 'args'):
-            kernel = partial(kernel, *self.args)
+        array_type = get_type_of_arrays(*chain(args, self.args, self.kwargs.values(), kwargs.values()))
 
-        if hasattr(self, 'kwargs'):
+        if array_type == NdArrayType.TORCH:
+            kernel = self._create_ml_op('torch_native', target, **kwargs)
+        elif array_type == NdArrayType.TENSORFLOW:
+            kernel = self._create_ml_op('tensorflow_native', target, **kwargs)
+        else:
+            if array_type == NdArrayType.PYCUDA:
+                target = 'gpu'
+            if not target:
+                target = 'cpu'
+            ast = pystencils.create_kernel(self,
+                                           target=target,
+                                           *args,
+                                           **kwargs)
+            kernel = ast.compile()
+
+        if self.args:
+            kernel.__call__ = partial(kernel, *self.args)
+
+        if self.kwargs:
             kernel = partial(kernel, **self.kwargs)
 
-        kernel.code = code
+        self.kernel = kernel
         return kernel
 
     def backward(self):
         if not self._autodiff:
             self._create_autodiff()
         return AssignmentCollection(self._autodiff.backward_assignments)
+
+    @property
+    def code(self):
+        return self.kernel.code
 
     def create_pytorch_op(self, target='gpu', **kwargs):
         return self._create_ml_op('torch_native', target, **kwargs)
@@ -71,6 +131,8 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         return self._create_ml_op('tensorflow_native', target, **kwargs)
 
     def _create_ml_op(self, backend, target, **kwargs):
+        if not target:
+            target = 'gpu'
         constant_field_names = [f for f, t in kwargs.items()
                                 if hasattr(t, 'requires_grad') and not t.requires_grad]
         constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
@@ -91,4 +153,4 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     def _create_autodiff(self, constant_fields=[]):
         import pystencils.autodiff
         self._autodiff = pystencils.autodiff.AutoDiffOp(
-            self, operation_name="", constant_fields=constant_fields)
+            self, constant_fields=constant_fields)
