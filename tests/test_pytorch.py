@@ -7,6 +7,10 @@
 """
 
 """
+import os
+
+import pytest
+
 import pystencils
 import pystencils_reco.resampling
 import sympy
@@ -14,6 +18,9 @@ from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil
+
+if 'CI' in os.environ:
+    pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
 
 
 def test_pytorch():
@@ -57,6 +64,7 @@ def test_pytorch_from_tensors():
     print(torch_op)
 
 
+@pytest.mark.skip(reason="native texture uploading not implemented")
 def test_texture():
     x, y = pystencils.fields('x,y: float32[100,100]')
     assignments = pystencils_reco.resampling.scale_transform(x, y, 2)
@@ -66,10 +74,10 @@ def test_texture():
     kernel = assignments.create_pytorch_op(x=x_tensor, y=y_tensor)
     print(assignments)
     print(kernel)
-    print(kernel.code)
     kernel.forward()
 
 
+@pytest.mark.skip(reason="native texture uploading not implemented")
 def test_projection():
 
     volume = pystencils.fields('volume: float32[100,200,300]')

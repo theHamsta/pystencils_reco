@@ -10,6 +10,7 @@
 from os.path import dirname, join
 
 import numpy as np
+import pytest
 import skimage.io
 
 import pystencils
@@ -92,6 +93,7 @@ def test_rotation_visualize():
         pyconrad.imshow(tmp.get(), str(s))
 
 
+@pytest.mark.skip(reason="BSPLINE currently not in pystencils")
 def test_rotation_visualize_bspline():
     from pycuda.gpuarray import to_gpu, zeros_like
 

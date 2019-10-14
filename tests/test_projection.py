@@ -17,7 +17,8 @@ import sympy
 from pystencils_reco.projection import forward_projection
 
 try:
-    import pyconrad.autoinit
+    pass
+    # import pyconrad.autoinit
 except Exception:
     import unittest
     pyconrad = unittest.mock.MagicMock()
@@ -72,7 +73,6 @@ def test_projection():
 
 @pytest.mark.parametrize('with_spline', (False,))
 def test_project_shepp_logan(with_spline):
-    import pycuda.autoinit  # NOQA
     from pycuda.gpuarray import to_gpu, GPUArray
 
     try:
