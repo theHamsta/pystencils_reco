@@ -57,17 +57,6 @@ def test_mean_filter_with_crazy_compilation():
     assignments.compile('cpu')()
 
 
-def test_mean_filter_with_crazy_torch():
-    torch = pytest.importorskip('torch')
-    x = torch.rand((20, 30))
-    y = torch.zeros_like(x)
-
-    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
-    ab = assignments.create_pytorch_op()
-    ab()
-    assignments.compile()()
-
-
 def test_crazy_target_detection():
     to_gpu = pytest.importorskip('pycuda.gpuarray').to_gpu
     zeros_like = pytest.importorskip('pycuda.gpuarray').zeros_like
@@ -171,3 +160,14 @@ def test_gauss_filter_evaluation():
     kernel = pystencils_reco.filters.gauss_filter(
         x, y, BoxStencil(3, ndim=2, with_center=False), sigma=sympy.Symbol('a')).compile()
     kernel(x=x_array[0], y=y_array[0], a=0.7)
+
+
+def test_mean_filter_with_crazy_torch():
+    torch = pytest.importorskip('torch')
+    x = torch.rand((20, 30))
+    y = torch.zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    ab = assignments.create_pytorch_op()
+    ab()
+    assignments.compile()()
