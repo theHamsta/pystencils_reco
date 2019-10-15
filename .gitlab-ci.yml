@@ -1,13 +1,11 @@
 full:
   stage: test
-  except:
-    variables:
-      - $ENABLE_NIGHTLY_BUILDS
   image: i10git.cs.fau.de:5005/pycodegen/pycodegen/full
   script:
     - apt install -y ninja-build
     - python -m pip install -e ".[all]"
-    - python setup.py test
+    - python -m pip install git+https://i10git.cs.fau.de/seitz/pystencils.git
+    - pytest
     - python setup.py doctest
   tags:
     - docker
@@ -25,6 +23,7 @@ pytorch_tests:
   script:
     - apt install -y ninja-build
     - python -m pip install -e ".[all]"
+    - python -m pip install git+https://i10git.cs.fau.de/seitz/pystencils.git
     - pytest tests/test_pytorch.py
   tags:
     - docker
