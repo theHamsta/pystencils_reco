@@ -17,9 +17,9 @@ import sympy
 from pystencils.autodiff import torch_tensor_from_field
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
-from pystencils_reco.stencils import BallStencil
+from pystencils_reco.stencils import BallStencil, BoxStencil
 
-if 'CI' in os.environ:
+if 'PYTORCH_TEST' not in os.environ:
     pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
 
 
@@ -64,7 +64,6 @@ def test_pytorch_from_tensors():
     print(torch_op)
 
 
-@pytest.mark.skip(reason="native texture uploading not implemented")
 def test_texture():
     x, y = pystencils.fields('x,y: float32[100,100]')
     assignments = pystencils_reco.resampling.scale_transform(x, y, 2)
@@ -94,3 +93,14 @@ def test_projection():
     kernel = assignments.create_pytorch_op(volume=x_tensor, projections=y_tensor)
     print(assignments)
     print(kernel)
+
+
+def test_mean_filter_with_crazy_torch():
+    torch = pytest.importorskip('torch')
+    x = torch.rand((20, 30))
+    y = torch.zeros_like(x)
+
+    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
+    ab = assignments.create_pytorch_op()
+    ab()
+    assignments.compile()()

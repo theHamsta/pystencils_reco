@@ -162,13 +162,3 @@ def test_gauss_filter_evaluation():
     kernel(x=x_array[0], y=y_array[0], a=0.7)
 
 
-@pytest.mark.skipif('CI' in os.environ, reason="torch crashes pycuda tests")
-def test_mean_filter_with_crazy_torch():
-    torch = pytest.importorskip('torch')
-    x = torch.rand((20, 30))
-    y = torch.zeros_like(x)
-
-    assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
-    ab = assignments.create_pytorch_op()
-    ab()
-    assignments.compile()()
