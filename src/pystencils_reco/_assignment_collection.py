@@ -12,7 +12,7 @@ from enum import Enum
 from functools import partial
 from itertools import chain
 
-import pystencils.assignment_collection
+import pystencils
 
 
 class NdArrayType(str, Enum):
