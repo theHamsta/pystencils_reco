@@ -73,10 +73,9 @@ def test_texture():
     kernel = assignments.create_pytorch_op(x=x_tensor, y=y_tensor)
     print(assignments)
     print(kernel)
-    kernel.forward()
+    kernel()
 
 
-@pytest.mark.skip(reason="native texture uploading not implemented")
 def test_projection():
 
     volume = pystencils.fields('volume: float32[100,200,300]')
