@@ -17,6 +17,23 @@ full:
       - test-report
       - htmlcov
 
+pytorch_tests:
+  stage: test
+  image: i10git.cs.fau.de:5005/pycodegen/pycodegen/full
+  variables:
+    PYTORCH_TEST: "TRUE"
+  script:
+    - apt install -y ninja-build
+    - python -m pip install -e ".[all]"
+    - pytest tests/test_pytorch.py
+  tags:
+    - docker
+  artifacts:
+    when: always
+    paths:
+      - test-report
+      - htmlcov
+
 # -------------------- Linter & Documentation --------------------------------------------------------------------------
 
 flake8-lint:
