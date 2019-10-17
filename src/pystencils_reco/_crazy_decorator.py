@@ -13,6 +13,8 @@ import inspect
 import pystencils
 import pystencils_reco
 import sympy
+from pystencils_autodiff.field_tensor_conversion import \
+    ArrayWithIndexDimensions
 
 
 def crazy(function):
@@ -38,6 +40,8 @@ def crazy(function):
         if (isinstance(assignments, pystencils.AssignmentCollection) and
                 not isinstance(assignments, pystencils_reco.AssignmentCollection)):
             assignments = pystencils_reco.AssignmentCollection(assignments)
+
+        kwargs = {k: v if not isinstance(v, ArrayWithIndexDimensions) else v.array for k, v in kwargs.items()}
 
         try:
             assignments.kwargs = kwargs
