@@ -9,32 +9,14 @@
 """
 
 import numpy as np
+import pytest
 
 import pystencils as ps
-from pystencils_reco.unet import max_pooling, relu
+from pystencils_reco.unet import convolution, max_pooling, relu
 
 
 def test_unet():
     pass
-
-
-def test_conv():
-    src_arr = np.random.rand(21, 31, 1)
-    dst_arr = np.zeros([21, 31, 3])
-    stencil_arr = np.ones([3, 3, 1, 3]) / 9
-
-    dst, src = ps.fields(f'dst(3), src(1): [21, 31]')
-
-    stencil = ps.fields(f'stencil(1, 3): [3,3]')
-    stencil.field_type = ps.field.FieldType.CUSTOM
-
-    assignments = conv_2d_stencil(src, stencil, dst)
-    ast = ps.create_kernel(assignments)
-
-    print(ps.show_code(ast))
-    kernel = ast.compile()
-
-    kernel(dst=dst_arr, src=src_arr, stencil=stencil_arr)
 
 
 def test_relu():
@@ -61,4 +43,43 @@ def test_max_pooling():
     compiled(src=src_arr, dst=dst_arr)
 
 
-test_max_pooling()
+@pytest.mark.parametrize('input_channels, output_channels', ((1, 1), (3, 2), (2, 4)))
+def test_conv(input_channels, output_channels):
+    src_arr = np.random.rand(21, 31, input_channels)
+    dst_arr = np.zeros([21, 31, output_channels])
+    stencil_arr = np.ones([3, 3, input_channels, output_channels]) / 9
+
+    dst, src = ps.fields(f'dst({output_channels}), src({input_channels}): [2d]')
+
+    stencil = ps.fields(f'stencil({input_channels}, {output_channels}): [3,3]')
+    stencil.field_type = ps.field.FieldType.CUSTOM
+
+    assignments = convolution(src, stencil, dst)
+    ast = ps.create_kernel(assignments)
+
+    print(ps.show_code(ast))
+
+    kernel = ast.compile()
+
+    kernel(dst=dst_arr, src=src_arr, stencil=stencil_arr)
+
+
+@pytest.mark.parametrize('input_channels, output_channels', ((1, 1), (3, 2), (2, 4)))
+def test_conv_advanced(input_channels, output_channels):
+    filter_shape = (5, 4)
+
+    src_arr = np.random.rand(21, 31, input_channels)
+    dst_arr = np.zeros([21, 31, output_channels])
+    stencil_arr = np.ones([*filter_shape, input_channels, output_channels]) / (5 * 4)
+
+    dst, src = ps.fields(f'dst({output_channels}), src({input_channels}): [2d]')
+
+    stencil = ps.fields(f'stencil({input_channels}, {output_channels}): [{filter_shape[0]}, {filter_shape[1]}]')
+    stencil.field_type = ps.field.FieldType.CUSTOM
+
+    assignments = convolution(src, stencil, dst)
+    ast = ps.create_kernel(assignments)
+
+    print(ps.show_code(ast))
+    kernel = ast.compile()
+    kernel(dst=dst_arr, src=src_arr, stencil=stencil_arr)

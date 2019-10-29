@@ -13,7 +13,6 @@ from typing import List
 import sympy
 
 import pystencils
-import pystencils_reco
 from pystencils.field import FieldType
 from pystencils_reco import crazy
 
@@ -46,4 +45,22 @@ def max_pooling(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
                                   )
         )
 
+    return assignments
+
+
+def convolution(input, stencil, result):
+    assert input.index_shape[0] == stencil.index_shape[0]
+    assert result.index_shape[0] == stencil.index_shape[1]
+    assert input.spatial_dimensions == result.spatial_dimensions
+
+    assignments = []
+
+    for i in range(result.index_shape[0]):
+        rhs = []
+        for j in range(input.index_shape[0]):
+            for offset in itertools.product(*[range(-s//2+1, s//2 + 1) for s in stencil.spatial_shape]):
+                rhs.append(input.__getitem__(offset)(j) *
+                           stencil.absolute_access(tuple(o + s//2 for o, s in zip(offset, stencil.spatial_shape)), (j, i)))  # noqa
+        assignment = pystencils.Assignment(result.center(i), sympy.Add(*rhs))
+        assignments.append(assignment)
     return assignments
