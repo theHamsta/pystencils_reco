@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 import pystencils as ps
-from pystencils_reco.unet import convolution, max_pooling, relu
+from pystencils_reco.unet import channel_convolution, convolution, max_pooling, relu
 
 
 def test_unet():
@@ -54,7 +54,7 @@ def test_conv(input_channels, output_channels):
     stencil = ps.fields(f'stencil({input_channels}, {output_channels}): [3,3]')
     stencil.field_type = ps.field.FieldType.CUSTOM
 
-    assignments = convolution(src, stencil, dst)
+    assignments = channel_convolution(src, stencil, dst)
     ast = ps.create_kernel(assignments)
 
     print(ps.show_code(ast))
@@ -77,7 +77,7 @@ def test_conv_advanced(input_channels, output_channels):
     stencil = ps.fields(f'stencil({input_channels}, {output_channels}): [{filter_shape[0]}, {filter_shape[1]}]')
     stencil.field_type = ps.field.FieldType.CUSTOM
 
-    assignments = convolution(src, stencil, dst)
+    assignments = channel_convolution(src, stencil, dst)
     ast = ps.create_kernel(assignments)
 
     print(ps.show_code(ast))
@@ -93,5 +93,14 @@ def test_conv_3d(input_channels, output_channels):
     dst_arr = np.zeros([21, 31, 42, output_channels])
     stencil_arr = np.ones([*filter_shape, input_channels, output_channels]) / (5 * 4 * 3)
 
-    convolution(src_arr, stencil_arr, dst_arr).compile()()
+    channel_convolution(src_arr, stencil_arr, dst_arr).compile()()
 
+
+def test_conv3d_without_channels():
+    filter_shape = (5, 4, 3)
+
+    src_arr = np.random.rand(21, 31, 42)
+    dst_arr = np.zeros([21, 31, 42])
+    stencil_arr = np.ones(filter_shape) / (5 * 4 * 3)
+
+    convolution(src_arr, stencil_arr, dst_arr).compile()()
