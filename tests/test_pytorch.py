@@ -9,18 +9,20 @@
 """
 import os
 
+import numpy as np
 import pytest
+import sympy
 
 import pystencils
 import pystencils_reco.resampling
-import sympy
-from pystencils.autodiff import torch_tensor_from_field
+from pystencils_autodiff.field_tensor_conversion import torch_tensor_from_field
+from pystencils_reco import crazy
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
-if 'PYTORCH_TEST' not in os.environ:
-    pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
+# if 'PYTORCH_TEST' not in os.environ:
+# pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
 
 
 def test_pytorch():
@@ -76,6 +78,58 @@ def test_texture():
     kernel()
 
 
+@pytest.mark.parametrize('ndim', (3,))
+def test_texture_crazy(ndim):
+    import torch
+    x = torch.rand((20, 30, 100)[0:ndim])
+    y = torch.empty_like(x)
+    scale = sympy.Symbol('scale')
+
+    kernel = pystencils_reco.resampling.scale_transform(x, y, scale).compile(target='gpu')
+    print(kernel.code)
+    rtn = kernel().forward(input_field=x, output_field=y, transform_matrix=2)[0]
+    import pyconrad.autoinit
+    pyconrad.imshow(x)
+    pyconrad.imshow(rtn)
+
+
+def test_numpy_crazy():
+    x = np.random.rand(20, 30)
+    y = np.empty_like(x)
+
+    @crazy
+    def kernel(x, y):
+        return pystencils_reco.AssignmentCollection({y.center: x.center + 1})
+
+    kernel = kernel(x, y).compile()
+    kernel()
+    import pyconrad.autoinit
+    pyconrad.imshow(x, 'x')
+    pyconrad.imshow(y, 'y')
+
+
+def test_torch_crazy():
+    import torch
+    x = torch.rand((20, 30)).cuda()
+    y = torch.empty_like(x).cuda()
+    print("y.dtype: " + str(y.dtype))
+
+    @crazy
+    def kernel(x, y):
+        return pystencils_reco.AssignmentCollection({y.center: x.center + 1})
+
+    assignments = kernel(x, y)
+    print("assignments: " + str(assignments))
+    kernel = assignments.compile()()
+    print("kernel.code: " + str(kernel.code))
+    rtn = kernel.forward(x=x, y=y)[0]
+    assert rtn is y
+    import pyconrad.autoinit
+    pyconrad.imshow(x)
+    pyconrad.imshow(rtn)
+    pyconrad.imshow(y)
+
+
 def test_projection():
 
     volume = pystencils.fields('volume: float32[100,200,300]')
@@ -103,3 +157,6 @@ def test_mean_filter_with_crazy_torch():
     ab = assignments.create_pytorch_op()
     ab()
     assignments.compile()()
+
+
+test_texture_crazy(3)

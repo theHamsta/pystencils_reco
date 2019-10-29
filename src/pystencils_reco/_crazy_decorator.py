@@ -8,36 +8,40 @@
 
 """
 
+import functools
 import inspect
+
+import sympy
 
 import pystencils
 import pystencils_reco
-import sympy
-from pystencils_autodiff.field_tensor_conversion import \
-    ArrayWithIndexDimensions
+from pystencils_autodiff.field_tensor_conversion import ArrayWithIndexDimensions
 
 
 def crazy(function):
     from pystencils_autodiff.field_tensor_conversion import (
         create_field_from_array_like, is_array_like)
 
+    @functools.wraps(function)
     def wrapper(*args, **kwargs):
         import pycuda.gpuarray
-        arg_names = inspect.getfullargspec(function).args
-        compile_args = [create_field_from_array_like(arg_names[i], a)
+        inspection = inspect.getfullargspec(function)
+        arg_names = inspection.args
+        annotations = inspection.annotations
+
+        compile_args = {arg_names[i]: create_field_from_array_like(arg_names[i], a, annotations[arg_names[i]])
                         if is_array_like(a)
-                        else a for i, a in enumerate(args)]
-        compile_kwargs = {k: create_field_from_array_like(str(k), a)
+                        else a for i, a in enumerate(args)}
+        compile_kwargs = {k: create_field_from_array_like(str(k), a, annotations[k])
                           if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and
                           not isinstance(a, sympy.Matrix)  # noqa
                           else a for (k, a) in kwargs.items()}
-        # compile_kwargs['function_name'] = function.__name__
 
-        assignments = function(*compile_args, **compile_kwargs)
+        assignments = function(*compile_args.values(), **compile_kwargs)
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
 
-        if (isinstance(assignments, pystencils.AssignmentCollection) and
+        if (isinstance(assignments, (pystencils.AssignmentCollection, list)) and
                 not isinstance(assignments, pystencils_reco.AssignmentCollection)):
             assignments = pystencils_reco.AssignmentCollection(assignments)
 
@@ -51,3 +55,19 @@ def crazy(function):
         return assignments
 
     return wrapper
+
+
+# class requires(object):
+    # """ Decorator for registering requirements on print methods. """
+
+    # def __init__(self, **kwargs):
+    # self._decorator_kwargs = kwargs
+
+    # def __call__(self, function):
+    # def _method_wrapper(self, *args, **kwargs):
+    # for k, v in self._decorator_kwargs.items():
+    # obj, member = k.split('__')
+    # setattr(kwargs[obj], member, v)
+
+    # return function(*args, **kwargs)
+    # return functools.wraps(function)(_method_wrapper)

@@ -106,13 +106,15 @@ class AssignmentCollection(pystencils.AssignmentCollection):
                                            **kwargs)
             kernel = ast.compile()
 
-        if self.args:
-            kernel.__call__ = partial(kernel, *self.args)
+        if self.args and not hasattr(kernel, 'forward'):
+            kernel = partial(kernel, *self.args)
 
         if self.kwargs:
-            kernel = partial(kernel, **self.kwargs)
+            if hasattr(kernel, 'forward'):
+                kernel.class_kwargs = self.kwargs
+            else:
+                kernel = partial(kernel, **self.kwargs)
 
-        self.kernel = kernel
         return kernel
 
     def backward(self):
@@ -142,15 +144,21 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
         op = self._autodiff.create_tensorflow_op(backend=backend, use_cuda=(target == 'gpu'))
 
-        if hasattr(self, 'args'):
-            op = partial(op, *self.args)
+        # if hasattr(self, 'args'):
+        # op = partial(op, *self.args)
 
-        if hasattr(self, 'kwargs'):
-            op = partial(op, **self.kwargs)
+        # if hasattr(self, 'kwargs'):
+        # op = partial(op, **self.kwargs)
 
         return op
+
+    # def __getnewargs_ex__(self):
+        # return super().__getnewargs_ex__()
+
+    # def __getstate__(self):
+        # return (self.main_assignments, self.subexpressions)
 
     def _create_autodiff(self, constant_fields=[]):
         import pystencils.autodiff
         self._autodiff = pystencils.autodiff.AutoDiffOp(
-            self, constant_fields=constant_fields)
+            self, constant_fields=constant_fields, boundary_handling='zeros')

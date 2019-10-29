@@ -1,0 +1,49 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright © 2019 Stephan Seitz <stephan.seitz@fau.de>
+#
+# Distributed under terms of the GPLv3 license.
+
+"""
+
+"""
+import itertools
+from typing import List
+
+import sympy
+
+import pystencils
+import pystencils_reco
+from pystencils.field import FieldType
+from pystencils_reco import crazy
+
+
+@crazy
+def relu(input: pystencils.Field, result: pystencils.Field) -> List[pystencils.Assignment]:
+    assert input.spatial_dimensions == result.spatial_dimensions
+    assert input.index_shape == result.index_shape
+    assignments = []
+    for i in range(input.index_shape[0]):
+        assignments.append(pystencils.Assignment(result.center(i), sympy.Max(input.center(i), 0)))
+    return assignments
+
+
+@crazy
+def max_pooling(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
+                result: {'index_dimensions': 1}):
+    assert input.spatial_dimensions == result.spatial_dimensions
+    assert input.index_shape == result.index_shape
+    assignments = []
+
+    ndim = input.spatial_dimensions
+
+    for i in range(result.index_shape[0]):
+        offsets = itertools.product((0, 1), repeat=ndim)
+        assignments.append(
+            pystencils.Assignment(result.center(i),
+                                  sympy.Max(*[input.absolute_access(2 * pystencils.x_vector(ndim) + sympy.Matrix(offset), (i,))  # noqa
+                                              for offset in offsets])
+                                  )
+        )
+
+    return assignments

@@ -10,14 +10,13 @@ Implements a generic forward and backprojection projections
 
 import types
 
-import sympy
-
 import pystencils
 import pystencils.astnodes
+import pystencils.autodiff
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
+import sympy
 from pystencils.autodiff import AdjointField
-import pystencils.autodiff
 from pystencils_reco import crazy
 
 
@@ -122,7 +121,8 @@ def forward_projection(input_volume_field: pystencils.Field,
                                                    AdjointField(input_volume_field),
                                                    projection_matrix,
                                                    1)
-        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            assignments, "op", constant_fields=constant_fields, backward_assignments=backward_assignments)
 
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
 
@@ -140,5 +140,8 @@ def backward_projection(input_projection, output_volume, projection_matrix, norm
 
     for a in assignments.all_assignments:
         a = pystencils.Assignment(a.lhs, a.rhs / normalization)
+
+    return assignments
+    a = pystencils.Assignment(a.lhs, a.rhs / normalization)
 
     return assignments

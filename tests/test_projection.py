@@ -8,6 +8,8 @@
 
 """
 
+import pickle
+
 import numpy as np
 import pytest
 
@@ -53,7 +55,9 @@ def test_projection():
                                       [-239.9634468375339, - 4.188577544948043, 1200.0, 144000.0],
                                       [-0.9998476951563913, -0.01745240643728351, 0.0, 600.0]])
 
-    kernel = forward_projection(volume, projections, projection_matrix).compile(target='gpu')
+    assignments = forward_projection(volume, projections, projection_matrix)  # .compile(target='gpu')
+    print(type(assignments))
+    print(pickle.dumps(assignments))
 
     # a = sympy.Symbol('a')
     # projection_matrix = sympy.Matrix([[-289.0098977737411, -1205.2274801832275, 0.0, 186000.0],
