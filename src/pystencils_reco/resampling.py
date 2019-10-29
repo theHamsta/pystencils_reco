@@ -47,7 +47,7 @@ def generic_spatial_matrix_transform(input_field,
         texture = pystencils.interpolation_astnodes.Interpolator(
             AdjointField(output_field), interpolation_mode=interpolation_mode)
         output_coordinate = output_field.physical_to_index(
-            transform_matrix @ input_field.physical_coordinates_staggered, staggered=True)
+            transform_matrix @ input_field.physical_coordinates, staggered=False)
         backward_assignments = AssignmentCollection({
             AdjointField(input_field).center(): texture.at(output_coordinate)
         })
