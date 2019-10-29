@@ -29,10 +29,10 @@ def crazy(function):
         arg_names = inspection.args
         annotations = inspection.annotations
 
-        compile_args = {arg_names[i]: create_field_from_array_like(arg_names[i], a, annotations[arg_names[i]])
+        compile_args = {arg_names[i]: create_field_from_array_like(arg_names[i], a, annotations.get(arg_names[i], None))
                         if is_array_like(a)
                         else a for i, a in enumerate(args)}
-        compile_kwargs = {k: create_field_from_array_like(str(k), a, annotations[k])
+        compile_kwargs = {k: create_field_from_array_like(str(k), a, annotations.get(k, None))
                           if (hasattr(a, '__array__') or isinstance(a, pycuda.gpuarray.GPUArray)) and
                           not isinstance(a, sympy.Matrix)  # noqa
                           else a for (k, a) in kwargs.items()}

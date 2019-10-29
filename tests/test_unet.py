@@ -83,3 +83,15 @@ def test_conv_advanced(input_channels, output_channels):
     print(ps.show_code(ast))
     kernel = ast.compile()
     kernel(dst=dst_arr, src=src_arr, stencil=stencil_arr)
+
+
+@pytest.mark.parametrize('input_channels, output_channels', ((1, 1), (3, 2), (2, 4)))
+def test_conv_3d(input_channels, output_channels):
+    filter_shape = (5, 4, 3)
+
+    src_arr = np.random.rand(21, 31, 42, input_channels)
+    dst_arr = np.zeros([21, 31, 42, output_channels])
+    stencil_arr = np.ones([*filter_shape, input_channels, output_channels]) / (5 * 4 * 3)
+
+    convolution(src_arr, stencil_arr, dst_arr).compile()()
+

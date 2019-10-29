@@ -8,17 +8,17 @@
 
 """
 import itertools
-from typing import List
 
 import sympy
 
 import pystencils
+from pystencils.data_types import cast_func, create_type
 from pystencils.field import FieldType
 from pystencils_reco import crazy
 
 
 @crazy
-def relu(input: pystencils.Field, result: pystencils.Field) -> List[pystencils.Assignment]:
+def relu(input, result):
     assert input.spatial_dimensions == result.spatial_dimensions
     assert input.index_shape == result.index_shape
     assignments = []
@@ -48,7 +48,10 @@ def max_pooling(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
     return assignments
 
 
-def convolution(input, stencil, result):
+@crazy
+def convolution(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
+                stencil: {'index_dimensions': 2, 'field_type': FieldType.CUSTOM},
+                result: {'index_dimensions': 1}):
     assert input.index_shape[0] == stencil.index_shape[0]
     assert result.index_shape[0] == stencil.index_shape[1]
     assert input.spatial_dimensions == result.spatial_dimensions
@@ -63,4 +66,25 @@ def convolution(input, stencil, result):
                            stencil.absolute_access(tuple(o + s//2 for o, s in zip(offset, stencil.spatial_shape)), (j, i)))  # noqa
         assignment = pystencils.Assignment(result.center(i), sympy.Add(*rhs))
         assignments.append(assignment)
+    return assignments
+
+
+@crazy
+def upsample(input: {'field_type': FieldType.CUSTOM},
+             result,
+             sampling_factor=2):
+
+    assert input.spatial_dimensions == result.spatial_dimensions
+    assert input.field_type == FieldType.CUSTOM \
+        or result.spatial_shape == tuple([2 * x for x in input.spatial_shape])
+    assert input.index_shape == result.index_shape
+    assignments = []
+    ndim = input.spatial_dimensions
+
+    for i in range(result.index_shape[0]):
+        assignments.append(
+            pystencils.Assignment(result.center(i),
+                                  input.absolute_access(
+                sympy.Matrix(tuple([cast_func(x // sampling_factor, create_type("int")) for x in pystencils.x_vector(ndim)])), (i,)))
+        )
     return assignments
