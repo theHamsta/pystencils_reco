@@ -34,7 +34,7 @@ def generic_spatial_matrix_transform(input_field,
     # output_coordinate = input_field.coordinate_transform.inv() @ (
         # inverse_matrix @ output_field.physical_coordinates_staggered) - input_field.coordinate_origin
     output_coordinate = input_field.physical_to_index(
-        inverse_matrix @ output_field.physical_coordinates_staggered, staggered=False)
+        inverse_matrix @ output_field.physical_coordinates, staggered=False)
 
     assignments = AssignmentCollection({
         output_field.center():
