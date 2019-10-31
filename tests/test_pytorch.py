@@ -21,8 +21,8 @@ from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil, BoxStencil
 
-# if 'PYTORCH_TEST' not in os.environ:
-# pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
+if 'PYTORCH_TEST' not in os.environ:
+    pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
 
 
 def test_pytorch():
@@ -66,16 +66,22 @@ def test_pytorch_from_tensors():
     print(torch_op)
 
 
-def test_texture():
-    x, y = pystencils.fields('x,y: float32[100,100]')
+@pytest.mark.parametrize('with_texture', (False,))
+def test_texture(with_texture):
+    x, y = pystencils.fields('x,y: float32[3d]')
     assignments = pystencils_reco.resampling.scale_transform(x, y, 2)
 
-    x_tensor = torch_tensor_from_field(x, requires_grad=True, cuda=True)
-    y_tensor = torch_tensor_from_field(y, cuda=True)
-    kernel = assignments.create_pytorch_op(x=x_tensor, y=y_tensor)
+    import torch
+    x_tensor = torch.rand((20, 30, 100))
+    y_tensor = torch.empty_like(x_tensor)
+    kernel = assignments.create_pytorch_op(target='gpu', use_textures_for_interpolation=with_texture)()
     print(assignments)
-    print(kernel)
-    kernel()
+    print(kernel.code)
+    rtn = kernel.forward(x=x_tensor, y=y_tensor)
+    rtn = rtn[0].cpu()
+    print(rtn)
+    import pyconrad.autoinit
+    pyconrad.show_everything()
 
 
 @pytest.mark.parametrize('ndim', (3,))
@@ -87,10 +93,10 @@ def test_texture_crazy(ndim):
 
     kernel = pystencils_reco.resampling.scale_transform(x, y, scale).compile(target='gpu')
     print(kernel.code)
-    rtn = kernel().forward(input_field=x, output_field=y, transform_matrix=2)[0]
+    rtn = kernel().forward(input_field=x, output_field=y, scale=2)
     import pyconrad.autoinit
     pyconrad.imshow(x)
-    pyconrad.imshow(rtn)
+    pyconrad.imshow(rtn[0])
 
 
 def test_numpy_crazy():
@@ -157,6 +163,3 @@ def test_mean_filter_with_crazy_torch():
     ab = assignments.create_pytorch_op()
     ab()
     assignments.compile()()
-
-
-test_texture_crazy(3)
