@@ -66,7 +66,7 @@ def test_pytorch_from_tensors():
     print(torch_op)
 
 
-@pytest.mark.parametrize('with_texture', (False,))
+@pytest.mark.parametrize('with_texture', (False, True))
 def test_texture(with_texture):
     x, y = pystencils.fields('x,y: float32[3d]')
     assignments = pystencils_reco.resampling.scale_transform(x, y, 2)
@@ -149,7 +149,7 @@ def test_projection():
 
     x_tensor = torch_tensor_from_field(volume, requires_grad=True, cuda=True)
     y_tensor = torch_tensor_from_field(projections, cuda=True)
-    kernel = assignments.create_pytorch_op(volume=x_tensor, projections=y_tensor)
+    kernel = assignments.create_pytorch_op()().forward(volume=x_tensor, projections=y_tensor)
     print(assignments)
     print(kernel)
 
