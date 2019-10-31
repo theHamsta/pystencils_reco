@@ -41,7 +41,7 @@ def generic_spatial_matrix_transform(input_field,
         texture.at(output_coordinate)
     })
 
-    def create_autodiff(self, constant_fields=None):
+    def create_autodiff(self, constant_fields=None, **kwargs):
         assignments.transform_matrix = transform_matrix
 
         texture = pystencils.interpolation_astnodes.Interpolator(
@@ -51,7 +51,8 @@ def generic_spatial_matrix_transform(input_field,
         backward_assignments = AssignmentCollection({
             AdjointField(input_field).center(): texture.at(output_coordinate)
         })
-        self._autodiff = pystencils.autodiff.AutoDiffOp(assignments, "", backward_assignments=backward_assignments)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            assignments, "", backward_assignments=backward_assignments, **kwargs)
 
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
     return assignments
