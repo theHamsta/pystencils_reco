@@ -13,6 +13,8 @@ from functools import partial
 from itertools import chain
 
 import pystencils
+from pystencils.cache import disk_cache
+from pystencils_autodiff.tensorflow_jit import _hash
 
 
 class NdArrayType(str, Enum):
@@ -51,6 +53,12 @@ def get_type_of_arrays(*args):
     return NdArrayType.UNKNOWN
 
 
+@disk_cache
+def get_module_file(assignments, target):
+    kernel = assignments._create_ml_op('torch_native', target)
+    return kernel.ast.module_name
+
+
 class AssignmentCollection(pystencils.AssignmentCollection):
     """
     A high-level wrapper around pystencils.AssignmentCollection that provides some convenience methods
@@ -68,8 +76,10 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
         assignments = pystencils.AssignmentCollection(assignments, {})
         if perform_cse:
-            main_assignments = [a for a in assignments if isinstance(a.lhs, pystencils.Field.Access)]
-            subexpressions = [a for a in assignments if not isinstance(a.lhs, pystencils.Field.Access)]
+            main_assignments = [a for a in assignments if not hasattr(
+                a, 'lhs') or isinstance(a.lhs, pystencils.Field.Access)]
+            subexpressions = [a for a in assignments if hasattr(
+                a, 'lhs') and not isinstance(a.lhs, pystencils.Field.Access)]
             assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
             assignments = pystencils.simp.sympy_cse(assignments)
         super(AssignmentCollection, self).__init__(assignments.all_assignments, {}, *args, **kwargs)
@@ -77,6 +87,17 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         self.kwargs = {}
         self._autodiff = None
         self.kernel = None
+
+    @property
+    def reproducible_hash(self):
+        fields = sorted(self.free_fields | self.bound_fields, key=lambda f: f.name)
+        hashable_contents = [f.hashable_contents() for f in fields]
+        hash_str = str(self)
+        hash_str += str(hashable_contents)
+        return _hash(hash_str.encode()).hexdigest()
+
+    def __getstate__(self):
+        return self.reproducible_hash
 
     def compile(self, target=None, *args, **kwargs):
         """Convenience wrapper for pystencils.create_kernel(...).compile()

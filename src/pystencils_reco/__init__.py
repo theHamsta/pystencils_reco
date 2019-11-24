@@ -2,7 +2,7 @@
 from pkg_resources import DistributionNotFound, get_distribution
 
 from pystencils_reco._assignment_collection import AssignmentCollection
-from pystencils_reco._crazy_decorator import crazy
+from pystencils_reco._crazy_decorator import crazy, fixed_boundary_handling
 from pystencils_reco._projective_matrix import ProjectiveMatrix
 from pystencils_reco._typed_symbols import matrix_symbols, typed_symbols
 
@@ -18,6 +18,7 @@ finally:
 
 __all__ = ['AssignmentCollection',
            'crazy',
+           'crazy_fixed_boundary_handling'
            'ProjectiveMatrix',
            'matrix_symbols',
            'typed_symbols']

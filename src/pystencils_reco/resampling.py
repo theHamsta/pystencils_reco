@@ -113,3 +113,15 @@ def resample(input_field, output_field, interpolation_mode='linear'):
                                             output_field,
                                             sympy.Matrix(sympy.Identity(input_field.spatial_dimensions)),
                                             interpolation_mode=interpolation_mode)
+
+
+@crazy
+def translate(input_field: pystencils.Field,
+              output_field: pystencils.Field,
+              translation,
+              interpolation_mode='linear'):
+
+    return {
+        output_field.center: input_field.interpolated_access(
+            input_field.physical_to_index(output_field.physical_coordinates - translation), interpolation_mode)
+    }

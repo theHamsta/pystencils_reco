@@ -14,8 +14,10 @@ import inspect
 import sympy
 
 import pystencils
+import pystencils_autodiff.transformations
 import pystencils_reco
-from pystencils_autodiff.field_tensor_conversion import ArrayWithIndexDimensions
+from pystencils.cache import disk_cache
+from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 
 
 def crazy(function):
@@ -41,11 +43,11 @@ def crazy(function):
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
 
-        if (isinstance(assignments, (pystencils.AssignmentCollection, list)) and
+        if (isinstance(assignments, (pystencils.AssignmentCollection, list, dict)) and
                 not isinstance(assignments, pystencils_reco.AssignmentCollection)):
             assignments = pystencils_reco.AssignmentCollection(assignments)
 
-        kwargs = {k: v if not isinstance(v, ArrayWithIndexDimensions) else v.array for k, v in kwargs.items()}
+        kwargs = {k: v if not isinstance(v, ArrayWrapper) else v.array for k, v in kwargs.items()}
 
         try:
             assignments.kwargs = kwargs
@@ -57,17 +59,47 @@ def crazy(function):
     return wrapper
 
 
+def fixed_boundary_handling(function):
+
+    @functools.wraps(function)
+    def wrapper(*args, **kwargs):
+
+        assignments = function(*args, **kwargs)
+        kwargs = assignments.__dict__.get('kwargs', {})
+        args = assignments.__dict__.get('args', {})
+
+        if (isinstance(assignments, (pystencils.AssignmentCollection, list, dict)) and
+                not isinstance(assignments, pystencils_reco.AssignmentCollection)):
+            assignments = pystencils_reco.AssignmentCollection(assignments)
+
+        assignments = pystencils_autodiff.transformations.add_fixed_constant_boundary_handling(assignments)
+
+        assignments = pystencils_reco.AssignmentCollection(assignments)
+        assignments.args = args
+        assignments.kwargs = kwargs
+
+        return assignments
+
+    return wrapper
+
+
+@disk_cache
+def crazy_compile(crazy_function, *args, **kwargs):
+
+    return crazy_function(*args, **kwargs).compile()
+
+
 # class requires(object):
-    # """ Decorator for registering requirements on print methods. """
+# """ Decorator for registering requirements on print methods. """
 
-    # def __init__(self, **kwargs):
-    # self._decorator_kwargs = kwargs
+# def __init__(self, **kwargs):
+# self._decorator_kwargs = kwargs
 
-    # def __call__(self, function):
-    # def _method_wrapper(self, *args, **kwargs):
-    # for k, v in self._decorator_kwargs.items():
-    # obj, member = k.split('__')
-    # setattr(kwargs[obj], member, v)
+# def __call__(self, function):
+# def _method_wrapper(self, *args, **kwargs):
+# for k, v in self._decorator_kwargs.items():
+# obj, member = k.split('__')
+# setattr(kwargs[obj], member, v)
 
-    # return function(*args, **kwargs)
-    # return functools.wraps(function)(_method_wrapper)
+# return function(*args, **kwargs)
+# return functools.wraps(function)(_method_wrapper)
