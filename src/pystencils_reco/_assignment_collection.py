@@ -88,16 +88,16 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         self._autodiff = None
         self.kernel = None
 
-    @property
-    def reproducible_hash(self):
-        fields = sorted(self.free_fields | self.bound_fields, key=lambda f: f.name)
-        hashable_contents = [f.hashable_contents() for f in fields]
-        hash_str = str(self)
-        hash_str += str(hashable_contents)
-        return _hash(hash_str.encode()).hexdigest()
+    # @property
+    # def reproducible_hash(self):
+        # fields = sorted(self.free_fields | self.bound_fields, key=lambda f: f.name)
+        # hashable_contents = [f.hashable_contents() for f in fields]
+        # hash_str = str(self)
+        # hash_str += str(hashable_contents)
+        # return _hash(hash_str.encode()).hexdigest()
 
-    def __getstate__(self):
-        return self.reproducible_hash
+    # def __getstate__(self):
+        # return self.reproducible_hash
 
     def compile(self, target=None, *args, **kwargs):
         """Convenience wrapper for pystencils.create_kernel(...).compile()
@@ -134,7 +134,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             if hasattr(kernel, 'forward'):
                 kernel.class_kwargs = self.kwargs
             else:
-                kernel = partial(kernel, **self.kwargs)
+                kernel.__call__ = partial(kernel, **self.kwargs)
 
         return kernel
 
