@@ -1,10 +1,11 @@
-import pystencils
+import numpy as np
 import sympy
-from pystencils.simp import sympy_cse
-
-import pystencils_autodiff._backport
+import torch
 from sympy.matrices.dense import hessian
 
+import pystencils
+import pystencils_autodiff._backport
+from pystencils.simp import sympy_cse
 from pystencils_reco import crazy
 
 
@@ -29,21 +30,20 @@ def eigenvalues_3d(H_field: {'index_dimensions': 1}, xx, xy, xz, yy, yz, zz):
 
     return assignments
 
+
 @crazy
-def vesselness(eigenvalues: H_field: {'index_dimensions': 1}, vesselness):
+def vesselness(eigenvalues: {'index_dimensions': 1}, vesselness):
 
     lamda1 = sympy.max()
 
-import numpy as np
 
 image = np.random.rand(30, 40, 50)
 result = np.random.rand(30, 40, 50, 3)
 
 #kernel = eigenvalues_3d(result, image, image, image, image, image, image).compile()
 
-#kernel()
+# kernel()
 
-import torch
 
 image = torch.randn((30, 40, 50))
 result = torch.randn((30, 40, 50, 3))
