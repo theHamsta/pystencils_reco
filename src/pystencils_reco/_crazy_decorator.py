@@ -16,7 +16,7 @@ import sympy
 import pystencils
 import pystencils_autodiff.transformations
 import pystencils_reco
-from pystencils.cache import disk_cache
+from pystencils.cache import disk_cache, disk_cache_no_fallback
 from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 
 
@@ -25,6 +25,7 @@ def crazy(function):
         create_field_from_array_like, is_array_like)
 
     @functools.wraps(function)
+    @disk_cache_no_fallback
     def wrapper(*args, **kwargs):
         import pycuda.gpuarray
         inspection = inspect.getfullargspec(function)
@@ -39,7 +40,11 @@ def crazy(function):
                           not isinstance(a, sympy.Matrix)  # noqa
                           else a for (k, a) in kwargs.items()}
 
-        assignments = function(*compile_args.values(), **compile_kwargs)
+        try:
+            assignments = disk_cache(function)(*compile_args.values(), **compile_kwargs)
+        except Exception:
+            print('foo')
+            assignments = function(*compile_args.values(), **compile_kwargs)
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})
 
