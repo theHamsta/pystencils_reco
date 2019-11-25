@@ -12,10 +12,10 @@ import pickle
 
 import numpy as np
 import pytest
+import sympy
 
 import pystencils
 import pystencils_reco
-import sympy
 from pystencils_reco.projection import forward_projection
 
 try:
@@ -34,6 +34,18 @@ m2 = sympy.Matrix([[1, 0, 0],
                    [0, 1, 0]])
 m3 = sympy.Matrix([[0, 1, 0],
                    [0, 1, 1]])
+
+
+def test_genereric_projection():
+    volume = pystencils.fields('volume: float32[3d]')
+    projections = pystencils.fields('projections: float32[2D]')
+
+    projection_matrix = pystencils_reco.matrix_symbols('T', pystencils.data_types.create_type('float'), 3, 4)
+
+    assignments = forward_projection(volume, projections, projection_matrix)
+    print(assignments)
+    kernel = assignments.compile('gpu')
+    pystencils.show_code(kernel)
 
 
 def test_projection_cpu():
