@@ -10,13 +10,15 @@ Implements a generic forward and backprojection projections
 
 import types
 
+import sympy
+
 import pystencils
 import pystencils.astnodes
 import pystencils.autodiff
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
-import sympy
 from pystencils.autodiff import AdjointField
+from pystencils.cache import disk_cache_no_fallback
 from pystencils_reco import crazy
 
 
@@ -26,6 +28,10 @@ def forward_projection(input_volume_field: pystencils.Field,
                        projection_matrix,
                        step_size=1,
                        cubic_bspline_interpolation=False):
+    print(type(projection_matrix))
+    print(hash(projection_matrix))
+    print(hash(output_projections_field))
+    print(hash(input_volume_field))
     # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
 
     interpolation_mode = 'cubic_spline' if cubic_bspline_interpolation else 'linear'
@@ -47,6 +53,7 @@ def forward_projection(input_volume_field: pystencils.Field,
         # this also works for perspective/cone beam projection (but may lead to instable parametrization)
         eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
+    print('Solved')
 
     if not is_perspective:
         t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
@@ -105,7 +112,7 @@ def forward_projection(input_volume_field: pystencils.Field,
     # tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
     tex_coord = ray_equations.subs({t: min_t_tmp}) + projection_vector * i
 
-    assignments = pystencils_reco.AssignmentCollection({
+    assignments = {
         min_t_tmp: min_t,
         max_t_tmp: max_t,
         num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / (step_size / projection_vector_norm)),
@@ -114,17 +121,17 @@ def forward_projection(input_volume_field: pystencils.Field,
         intensity_weighting: (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2,
         output_projections_field.center(): (line_integral * step_size * intensity_weighting)
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
-    })
+    }
 
-    def create_autodiff(self, constant_fields=None):
-        backward_assignments = backward_projection(AdjointField(output_projections_field),
-                                                   AdjointField(input_volume_field),
-                                                   projection_matrix,
-                                                   1)
-        self._autodiff = pystencils.autodiff.AutoDiffOp(
-            assignments, "op", constant_fields=constant_fields, backward_assignments=backward_assignments)
+    # def create_autodiff(self, constant_fields=None):
+    # backward_assignments = backward_projection(AdjointField(output_projections_field),
+    # AdjointField(input_volume_field),
+    # projection_matrix,
+    # 1)
+    # self._autodiff = pystencils.autodiff.AutoDiffOp(
+    # assignments, "op", constant_fields=constant_fields, backward_assignments=backward_assignments)
 
-    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+    # assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
 
     return assignments
 

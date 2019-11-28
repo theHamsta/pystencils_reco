@@ -10,41 +10,69 @@
 
 
 import sympy
-import torch
 
 import pystencils
 from pystencils.backends.json import print_json, write_json
+from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 from pystencils_reco._assignment_collection import get_module_file
 from pystencils_reco.vesselness import eigenvalues_3d
 
 
 def test_vesselness():
+    import tensorflow as tf
 
-    # import numpy as np
+    image0 = tf.random.uniform((20, 30, 40, 3, 3))
+    eigenvalues, _ = tf.linalg.eigh(image0)
 
-    # image = np.random.rand(30, 40, 50).astype(np.float32)
-    # result = np.random.rand(30, 40, 50, 3).astype(np.float32)
+    sorted_eigenvalues = tf.sort(eigenvalues, axis=-1)
 
-    # assignments = eigenvalues_3d(result, image, image, image, image, image, image)
-    # print(assignments)
-    # print(assignments.reproducible_hash)
-    # print(get_module_file(assignments, 'cuda'))
-    # kernel = assignments.compile()
-    # kernel()
+    l1 = sorted_eigenvalues[..., -1]
+    l2 = sorted_eigenvalues[..., -2]
+    l3 = sorted_eigenvalues[..., -3]
 
-    import torch
-    torch.set_default_dtype(torch.double)
+    import numpy as np
 
-    result = torch.randn((2, 3, 4, 3))
-    image0 = torch.zeros((2, 3, 4), requires_grad=True)
-    image1 = torch.zeros((2, 3, 4), requires_grad=True)
-    image2 = torch.zeros((2, 3, 4), requires_grad=True)
-    image3 = torch.zeros((2, 3, 4), requires_grad=True)
-    image4 = torch.zeros((2, 3, 4), requires_grad=True)
-    image5 = torch.zeros((2, 3, 4), requires_grad=True)
+    image = np.random.rand(30, 40, 50).astype(np.float32)
+    result = np.random.rand(30, 40, 50, 3).astype(np.float32)
 
-    assignments = eigenvalues_3d(result, image0, image1, image2, image3, image4, image5)
-    assignments.compile()
+    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True)
+    kernel(eigenvaluefield=result, xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
+
+    import pycuda.autoinit
+    from pycuda.gpuarray import to_gpu
+
+    image = to_gpu(np.random.rand(30, 40, 50).astype(np.float32))
+    result = to_gpu(np.random.rand(30, 40, 50, 3).astype(np.float32))
+
+    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True)
+    kernel(eigenvaluefield=result, xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
+
+    image = tf.random.normal((30, 40, 50))
+    result = tf.random.normal((30, 40, 50, 3))
+
+    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True)
+    eigenvalues = kernel(xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
+    print(eigenvalues.shape)
+
+    # import torch
+    # torch.set_default_dtype(torch.double)
+
+    # result = torch.randn((2, 3, 4, 3))
+    # image0 = torch.zeros((2, 3, 4), requires_grad=True)
+    # image1 = torch.zeros((2, 3, 4), requires_grad=True)
+    # image2 = torch.zeros((2, 3, 4), requires_grad=True)
+    # image3 = torch.zeros((2, 3, 4), requires_grad=True)
+    # image4 = torch.zeros((2, 3, 4), requires_grad=True)
+    # image5 = torch.zeros((2, 3, 4), requires_grad=True)
+
+    # assignments = eigenvalues_3d(result, image0, image1, image2, image3, image4, image5)
+    # assignments.compile()
     # print(assignments)
     # # assignments.lambdify(sympy.
     # # kernel=assignments.compile()
@@ -64,21 +92,6 @@ def test_vesselness():
     # image5 = tf.random.uniform((20, 30, 40))
 
     # a = lam(image0, image1, image2, image3, image4, image5)
-    import tensorflow as tf
-
-    image0 = tf.random.uniform((20, 30, 40, 3, 3))
-    eigenvalues, _ = tf.linalg.eigh(image0)
-
-    print(eigenvalues)
-    print(eigenvalues.shape)
-
-    sorted_eigenvalues = tf.sort(eigenvalues, axis=-1)
-    print(sorted_eigenvalues)
-
-    l1 = sorted_eigenvalues[..., -1]
-    l2 = sorted_eigenvalues[..., -2]
-    l3 = sorted_eigenvalues[..., -3]
-    print(l1)
     # assignments = assignments.new_without_subexpressions().main_assignments
     # lambdas = {assignment.lhs: sympy.lambdify(sympy.symbols('H_field xx xy xz yy yz zz'),
     # assignment.rhs, 'tensorflow') for assignment in assignments}
@@ -101,3 +114,6 @@ def test_vesselness():
     # kernel = eigenvalues_3d(result, image, image, image, image, image, image).compile()
 
     # kernel()
+
+
+test_vesselness()

@@ -140,7 +140,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
     def backward(self):
         if not self._autodiff:
-            self._create_autodiff()
+            self._autodiff = self._create_autodiff()
         return AssignmentCollection(self._autodiff.backward_assignments)
 
     @property
@@ -161,11 +161,11 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
 
         if not self._autodiff:
-            self._create_autodiff(constant_fields, **kwargs)
+            self._autodiff = self._create_autodiff(constant_fields, **kwargs)
 
         op = self._autodiff.create_tensorflow_op(backend=backend, use_cuda=(target == 'gpu'))
 
-        # if hasattr(self, 'args'):
+        # if hasattr(self, 'args
         # op = partial(op, *self.args)
 
         # if hasattr(self, 'kwargs'):
@@ -179,7 +179,9 @@ class AssignmentCollection(pystencils.AssignmentCollection):
     # def __getstate__(self):
         # return (self.main_assignments, self.subexpressions)
 
+    # @pystencils.cache.disk_cache_no_fallback
     def _create_autodiff(self, constant_fields=[], **kwargs):
         import pystencils.autodiff
-        self._autodiff = pystencils.autodiff.AutoDiffOp(
+        return pystencils.autodiff.AutoDiffOp(
             self, constant_fields=constant_fields, boundary_handling='zeros', **kwargs)
+

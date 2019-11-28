@@ -32,4 +32,7 @@ def matrix_symbols(names, dtype, rows, cols):
         symbols = typed_symbols("%s:%i" % (n, rows * cols), dtype)
         matrices.append(sp.Matrix(rows, cols, lambda i, j: symbols[i * cols + j]))
 
-    return tuple(matrices)
+    if len(matrices) == 1:
+        return matrices[0]
+    else:
+        return tuple(matrices)

@@ -8,6 +8,7 @@
 
 """
 
+import hashlib
 import pickle
 
 import numpy as np
@@ -19,8 +20,7 @@ import pystencils_reco
 from pystencils_reco.projection import forward_projection
 
 try:
-    pass
-    # import pyconrad.autoinit
+    import pyconrad.autoinit
 except Exception:
     import unittest
     pyconrad = unittest.mock.MagicMock()
@@ -36,14 +36,26 @@ m3 = sympy.Matrix([[0, 1, 0],
                    [0, 1, 1]])
 
 
+_hash = hashlib.md5
+
+
 def test_genereric_projection():
     volume = pystencils.fields('volume: float32[3d]')
     projections = pystencils.fields('projections: float32[2D]')
 
     projection_matrix = pystencils_reco.matrix_symbols('T', pystencils.data_types.create_type('float'), 3, 4)
+    from sympy.matrices.dense import MutableDenseMatrix
+    MutableDenseMatrix.__hash__ = lambda x: 1  # hash(tuple(x))
+    print(hash(1))
+    print(hash(volume))
+    print(hash(projections))
+    print(hash(projections))
+    print(type(projection_matrix))
+    print(hash(projection_matrix))
 
     assignments = forward_projection(volume, projections, projection_matrix)
     print(assignments)
+    print(hash(assignments))
     kernel = assignments.compile('gpu')
     pystencils.show_code(kernel)
 
@@ -91,6 +103,8 @@ def test_projection():
 def test_project_shepp_logan(with_spline):
     from pycuda.gpuarray import to_gpu, GPUArray
 
+    from sympy.matrices.dense import MutableDenseMatrix
+    MutableDenseMatrix.__hash__ = lambda x: 1  # hash(tuple(x))
     try:
         import pyconrad.autoinit
         phantom3d = pyconrad.phantoms.shepp_logan(100, 100, 100)
@@ -98,7 +112,7 @@ def test_project_shepp_logan(with_spline):
     except Exception:
         phantom3d = np.random.rand(30, 31, 32)
 
-    for i, projection_matrix in enumerate((m0, m1, m2, m3)):
+    for i, projection_matrix in enumerate((m1,)):
 
         volume = pystencils.fields('volume: float32[100,100,100]')
         projections = pystencils.fields('projections: float32[1024,960]')
@@ -127,7 +141,7 @@ def test_project_shepp_logan(with_spline):
         pyconrad.imshow(volume_gpu, 'volume ' + str(with_spline))
         pyconrad.imshow(projection_gpu, 'projections ' + str(i) + str(with_spline))
 
-    for i, projection_matrix in enumerate((m0, m1, m2, m3)):
+    for i, projection_matrix in enumerate((m1,)):
         angle = pystencils_reco.typed_symbols('angle', 'float32')
 
         volume = pystencils.fields('volume: float32[100,100,100]')
