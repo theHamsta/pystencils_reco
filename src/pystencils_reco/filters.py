@@ -13,15 +13,16 @@ import functools
 import pystencils
 import pystencils.simp
 import pystencils_reco.functions
+from pystencils.cache import disk_cache_no_fallback
 from pystencils_reco import crazy
 from pystencils_reco._assignment_collection import AssignmentCollection
 
 
 @crazy
 def mean_filter(input_field: pystencils.Field, output_field: pystencils.Field, stencil):
-    assignments = AssignmentCollection({
+    assignments = {
         output_field.center(): sum(input_field[t] for t in stencil) / len(stencil)
-    })
+    }
 
     return assignments
 

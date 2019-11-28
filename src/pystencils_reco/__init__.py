@@ -21,4 +21,7 @@ __all__ = ['AssignmentCollection',
            'crazy_fixed_boundary_handling'
            'ProjectiveMatrix',
            'matrix_symbols',
-           'typed_symbols']
+           'typed_symbols',
+           'ProjectiveMatrix',
+           'fixed_boundary_handling',
+           ]
