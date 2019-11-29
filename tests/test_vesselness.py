@@ -9,22 +9,27 @@
 """
 
 
+try:
+    import pyconrad.autoinit
+except Exception:
+    import unittest.mock
+    pyconrad = unittest.mock.MagicMock()
+import numpy as np
+import pytest
 import sympy
 
-import pystencils
-from pystencils.backends.json import print_json, write_json
-from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
-from pystencils_reco._assignment_collection import get_module_file
-from pystencils_reco.vesselness import eigenvalues_3d
+from pystencils_reco.vesselness import eigenvalues_3d, eigenvalues_3d_3x3_algorithm
+
+pytest.importorskip('tensorflow')
 
 
 def test_vesselness():
     import tensorflow as tf
 
     image0 = tf.random.uniform((20, 30, 40, 3, 3))
-    eigenvalues, _ = tf.linalg.eigh(image0)
+    eigenvalues_tf, _ = tf.linalg.eigh(image0)
 
-    sorted_eigenvalues = tf.sort(eigenvalues, axis=-1)
+    sorted_eigenvalues = tf.sort(eigenvalues_tf, axis=-1)
 
     l1 = sorted_eigenvalues[..., -1]
     l2 = sorted_eigenvalues[..., -2]
@@ -56,64 +61,118 @@ def test_vesselness():
 
     assignments = eigenvalues_3d(result, image, image, image, image, image, image)
     print(assignments)
-    kernel = assignments.compile(use_auto_for_assignments=True)
+    kernel = assignments.compile(use_auto_for_assignments=True, target='cpu')
     eigenvalues = kernel(xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
     print(eigenvalues.shape)
 
-    # import torch
-    # torch.set_default_dtype(torch.double)
-
-    # result = torch.randn((2, 3, 4, 3))
-    # image0 = torch.zeros((2, 3, 4), requires_grad=True)
-    # image1 = torch.zeros((2, 3, 4), requires_grad=True)
-    # image2 = torch.zeros((2, 3, 4), requires_grad=True)
-    # image3 = torch.zeros((2, 3, 4), requires_grad=True)
-    # image4 = torch.zeros((2, 3, 4), requires_grad=True)
-    # image5 = torch.zeros((2, 3, 4), requires_grad=True)
-
-    # assignments = eigenvalues_3d(result, image0, image1, image2, image3, image4, image5)
-    # assignments.compile()
-    # print(assignments)
-    # # assignments.lambdify(sympy.
-    # # kernel=assignments.compile()
-
-    # main_assignments = [a for a in assignments if isinstance(a.lhs, pystencils.Field.Access)]
-    # subexpressions = [a for a in assignments if not isinstance(a.lhs, pystencils.Field.Access)]
-    # assignments = pystencils.AssignmentCollection(main_assignments, subexpressions)
-    # lam = assignments.lambdify(sympy.symbols('xx_C xy_C xz_C yy_C yz_C zz_C'), module='tensorflow')
-
-    # import tensorflow as tf
-
-    # image0 = tf.random.uniform((20, 30, 40))
-    # image1 = tf.random.uniform((20, 30, 40))
-    # image2 = tf.random.uniform((20, 30, 40))
-    # image3 = tf.random.uniform((20, 30, 40))
-    # image4 = tf.random.uniform((20, 30, 40))
-    # image5 = tf.random.uniform((20, 30, 40))
-
-    # a = lam(image0, image1, image2, image3, image4, image5)
-    # assignments = assignments.new_without_subexpressions().main_assignments
-    # lambdas = {assignment.lhs: sympy.lambdify(sympy.symbols('H_field xx xy xz yy yz zz'),
-    # assignment.rhs, 'tensorflow') for assignment in assignments}
-    # print(lambdas)
-
-    # torch.autograd.gradcheck(kernel.apply, tuple(
-    # [image0,
-    # image1,
-    # image2,
-    # image3,
-    # image4,
-    # image5]),
-    # atol=1e-4,
-    # raise_exception=True)
-
-    # image = tf.random.uniform((30, 40, 50))
-    # result = tf.random.normal((30, 40, 50, 3))
-
-    # #
-    # kernel = eigenvalues_3d(result, image, image, image, image, image, image).compile()
-
-    # kernel()
+    import pickle
+    pickle.loads(pickle.dumps(kernel))
 
 
-test_vesselness()
+@pytest.mark.parametrize('target', ('cpu',))
+def test_grad(target):
+    import tensorflow as tf
+
+    image = tf.random.normal((30, 40, 50))
+    result = tf.random.normal((30, 40, 50, 3))
+
+    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True, target=target)
+    eigenvalues = kernel(xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
+    print(eigenvalues.shape)
+
+    pyconrad.imshow(eigenvalues)
+
+
+@pytest.mark.parametrize('target', ('cpu',))
+def test_3x3(target):
+    import tensorflow as tf
+
+    xx = tf.random.normal((30, 40, 50))
+    xy = tf.random.normal((30, 40, 50))
+    xz = tf.random.normal((30, 40, 50))
+    yy = tf.random.normal((30, 40, 50))
+    yz = tf.random.normal((30, 40, 50))
+    zz = tf.random.normal((30, 40, 50))
+    eig1 = tf.random.normal((30, 40, 50))
+    eig2 = tf.random.normal((30, 40, 50))
+    eig3 = tf.random.normal((30, 40, 50))
+
+    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True, target=target)
+    eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
+
+
+@pytest.mark.parametrize('target', ('cpu',))
+def test_3x3_gradient_check(target):
+    import tensorflow as tf
+
+    shape = (3, 4, 5)
+    xx = tf.random.normal(shape)
+    xy = tf.random.normal(shape)
+    xz = tf.random.normal(shape)
+    yy = tf.random.normal(shape)
+    yz = tf.random.normal(shape)
+    zz = tf.random.normal(shape)
+    eig1 = tf.random.normal(shape)
+    eig2 = tf.random.normal(shape)
+    eig3 = tf.random.normal(shape)
+
+    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    print(assignments)
+    kernel = assignments.compile(target=target)
+    def fun(xx, xy, xz, yy, yz, zz):
+
+        eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
+        return tf.stack([eig1, eig2, eig3])
+
+    theoretical, numerical = tf.test.compute_gradient(
+        fun,
+        [xx, xy, xz, yy, yz, zz],
+        delta=0.001
+    )
+    # assert np.allclose(theoretical[0], numerical[0])
+    print(theoretical)
+    print(numerical)
+    pyconrad.imshow(theoretical)
+    pyconrad.imshow(numerical)
+
+
+@pytest.mark.parametrize('target', ('cpu',))
+def test_3x3_lambdify(target):
+    import tensorflow as tf
+
+    shape = (3, 4, 5)
+    xx = tf.random.normal(shape)
+    xy = tf.random.normal(shape)
+    xz = tf.random.normal(shape)
+    yy = tf.random.normal(shape)
+    yz = tf.random.normal(shape)
+    zz = tf.random.normal(shape)
+    eig1 = tf.random.normal(shape)
+    eig2 = tf.random.normal(shape)
+    eig3 = tf.random.normal(shape)
+
+    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    print(assignments)
+    symbols = sympy.symbols('xx xy xz yy yz zz')
+    kernel = assignments.lambdify(symbols, module='tensorflow')
+    eig1, eig2, eig3 = kernel(xx, xy, xz, yy, yz, zz)
+
+    def fun(xx, xy, xz, yy, yz, zz):
+
+        eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
+        return tf.stack([eig1, eig2, eig3])
+
+    theoretical, numerical = tf.test.compute_gradient(
+        fun,
+        [xx, xy, xz, yy, yz, zz],
+        delta=0.001
+    )
+
+    print(theoretical)
+    print(numerical)
+    pyconrad.imshow(theoretical)
+    pyconrad.imshow(numerical)

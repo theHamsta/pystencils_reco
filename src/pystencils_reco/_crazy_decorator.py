@@ -43,7 +43,6 @@ def crazy(function):
         try:
             assignments = disk_cache(function)(*compile_args.values(), **compile_kwargs)
         except Exception:
-            print('foo')
             assignments = function(*compile_args.values(), **compile_kwargs)
 
         kwargs.update({arg_names[i]: a for i, a in enumerate(args)})

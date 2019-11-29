@@ -13,8 +13,7 @@ from functools import partial
 from itertools import chain
 
 import pystencils
-from pystencils.cache import disk_cache
-from pystencils_autodiff.tensorflow_jit import _hash
+from pystencils.cache import disk_cache_no_fallback
 
 
 class NdArrayType(str, Enum):
@@ -23,6 +22,13 @@ class NdArrayType(str, Enum):
     TENSORFLOW = 'tensorflow'
     NUMPY = 'numpy'
     PYCUDA = 'pycuda'
+
+
+@pystencils.cache.disk_cache_no_fallback
+def _create_autodiff(self, constant_fields=[], **kwargs):
+    import pystencils.autodiff
+    return pystencils.autodiff.AutoDiffOp(
+        self, constant_fields=constant_fields, boundary_handling='zeros', **kwargs)
 
 
 def get_type_of_arrays(*args):
@@ -53,7 +59,7 @@ def get_type_of_arrays(*args):
     return NdArrayType.UNKNOWN
 
 
-@disk_cache
+@disk_cache_no_fallback
 def get_module_file(assignments, target):
     kernel = assignments._create_ml_op('torch_native', target)
     return kernel.ast.module_name
@@ -140,7 +146,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
     def backward(self):
         if not self._autodiff:
-            self._autodiff = self._create_autodiff()
+            self._autodiff = _create_autodiff(self)
         return AssignmentCollection(self._autodiff.backward_assignments)
 
     @property
@@ -161,7 +167,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
 
         if not self._autodiff:
-            self._autodiff = self._create_autodiff(constant_fields, **kwargs)
+            self._autodiff = _create_autodiff(self, constant_fields, **kwargs)
 
         op = self._autodiff.create_tensorflow_op(backend=backend, use_cuda=(target == 'gpu'))
 
@@ -178,10 +184,3 @@ class AssignmentCollection(pystencils.AssignmentCollection):
 
     # def __getstate__(self):
         # return (self.main_assignments, self.subexpressions)
-
-    # @pystencils.cache.disk_cache_no_fallback
-    def _create_autodiff(self, constant_fields=[], **kwargs):
-        import pystencils.autodiff
-        return pystencils.autodiff.AutoDiffOp(
-            self, constant_fields=constant_fields, boundary_handling='zeros', **kwargs)
-
