@@ -141,6 +141,29 @@ def test_3x3_gradient_check(target):
 
 
 @pytest.mark.parametrize('target', ('cpu',))
+def test_3x3_gradient_check_torch(target):
+    import torch
+
+    shape = (3, 4, 5)
+    xx = torch.randn(*shape, requires_grad=True)
+    xy = torch.randn(*shape, requires_grad=True)
+    xz = torch.randn(*shape, requires_grad=True)
+    yy = torch.randn(*shape, requires_grad=True)
+    yz = torch.randn(*shape, requires_grad=True)
+    zz = torch.randn(*shape, requires_grad=True)
+    eig1 = torch.randn(*shape)
+    eig2 = torch.randn(*shape)
+    eig3 = torch.randn(*shape)
+
+    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    print(assignments)
+    kernel = assignments.compile(target=target)
+
+    torch.autograd.gradcheck(kernel.apply, [xx, xy, xz, yy, yz, zz])
+    # assert np.allclose(theoretical[0], numerical[0])
+
+
+@pytest.mark.parametrize('target', ('cpu',))
 def test_3x3_lambdify(target):
     import tensorflow as tf
 
