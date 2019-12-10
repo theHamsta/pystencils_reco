@@ -135,9 +135,9 @@ def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
     A = sympy.Matrix([[xx.center, xy.center, xz.center],
                       [xy.center, yy.center, yz.center],
                       [xz.center, yz.center, zz.center]])
-    p1, p2, q, p, r, phi, B, e1, e2, e3 = sympy.symbols('p1, p2, q, p, r, phi, B, e1, e2, e3')
+    p1, p2, q, p, r, phi, e1, e2, e3 = sympy.symbols('p1, p2, q, p, r, phi, e1, e2, e3')
 
-    B = (1 / p) * (A - q * eye(3, 3))
+    B = (1 / p) * (A - q * eye(3))
 
     return {
         p1: xy.center ** 2 + xz.center ** 2 + yz.center ** 2,

@@ -218,10 +218,11 @@ def test_3x3_lambdify(target):
 def test_check_forward(target):
     import tensorflow as tf
 
-    shape = (1, 1, 1)
+    shape = (20, 20, 20)
 
     # image0 = 1 + tf.random.uniform((*shape, 3, 3))
-    image0 = 1 + tf.ones((*shape, 3, 3))
+    symmetric = tf.random.uniform((*shape, 3, 3))
+    image0 = 1 + tf.ones((*shape, 3, 3)) + 0.2 * (tf.transpose(symmetric, perm=(0, 1, 2, 4, 3)) + symmetric)
     xx = image0[..., 0, 0]
     yy = image0[..., 1, 1]
     zz = image0[..., 2, 2]
@@ -251,5 +252,9 @@ def test_check_forward(target):
     import pyconrad.autoinit
     pyconrad.imshow(sorted_own)
     pyconrad.imshow(sorted_tf)
+    pyconrad.imshow(sorted_own - sorted_tf)
 
-    assert np.allclose(sorted_own, sorted_tf)
+    max_diff = np.max(np.abs(sorted_own - sorted_tf))
+    print(max_diff)
+
+    assert np.allclose(sorted_own, sorted_tf, rtol=1e-2, atol=1e-3)
