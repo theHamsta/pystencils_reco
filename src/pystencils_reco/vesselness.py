@@ -74,6 +74,53 @@ def eigenvalues_3d(eigenvaluefield: {'index_dimensions': 1}, xx, xy, xz, yy, yz,
 
 
 @crazy
+def eigenvalues_3d_9(e1, e2, e3, xx, xy, xz, yy, yz, zz):
+
+    H = sympy.Matrix([[xx.center, xy.center, xz.center],
+                      [xy.center, yy.center, yz.center],
+                      [xz.center, yz.center, zz.center]]
+                     )
+
+    eigenvalues = list(H.eigenvals())
+
+    assignments = pystencils.AssignmentCollection({
+        e1.center: sympy.re(eigenvalues[0]),
+        e2.center: sympy.re(eigenvalues[1]),
+        e3.center: sympy.re(eigenvalues[2]),
+    })
+
+    class complex_symbol_generator():
+
+        def __iter__(self):
+            counter = 0
+            while True:
+                yield TypedSymbol('xi_%i' % counter, create_type(np.complex64))
+                counter += 1
+
+    assignments = pystencils.AssignmentCollection(optimize_assignments(assignments, [evaluate_constant_terms]))
+    assignments.subexpression_symbol_generator = complex_symbol_generator()
+    assignments = sympy_cse(assignments)
+    assignments = optimize_assignments(assignments, [use_complex_sqrt])
+
+    # complex_rhs = []
+    # for a in assignments:
+    # if isinstance(a.lhs, pystencils.Field.Access):
+    # complex_rhs.append(a.rhs)
+    # assignments = pystencils_reco.AssignmentCollection(assignments).subs(
+    # {c: sympy.Function('real')(c) for c in complex_rhs})
+    # print(assignments)
+
+    # complex_symbols = [(a.lhs, a.rhs) for a in assignments if any(atom.is_real is False for atom in a.rhs.atoms())]
+
+    # assignments = assignments.subs({a.lhs: a.rhs for a in assignments if any(
+    # atom.is_real is False for atom in a.rhs.atoms())})
+    # print(complex_symbols)
+
+    assignments = pystencils_reco.AssignmentCollection(assignments, perform_cse=False)
+    return assignments
+
+
+@crazy
 def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
     """
     From https://en.wikipedia.org/wiki/Eigenvalue_algorithm#3%C3%973_matrices
@@ -99,12 +146,10 @@ def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
         p: sympy.sqrt(p2/6),
         r: B.det() * 0.5,
         phi: sympy.Piecewise(((sympy.pi / 3), (r <= -1)), ((0), (r >= 1)), ((sympy.acos(r) / 3), (True))),
-        e1: q + 2 * sympy.cos(phi),
+        e1: q + 2 * p * sympy.cos(phi),
         e3: q + 2 * p * sympy.cos(phi + (2 * sympy.pi/3)),
         e2: 3 * q - e1 - e3,
         eig1.center: e1,
         eig2.center: e2,
         eig3.center: e3,
     }
-
-
