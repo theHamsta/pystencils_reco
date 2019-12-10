@@ -18,7 +18,10 @@ import numpy as np
 import pytest
 import sympy
 
-from pystencils_reco.vesselness import eigenvalues_3d, eigenvalues_3d_3x3_algorithm
+import pystencils
+from pystencils_autodiff.field_tensor_conversion import create_field_from_array_like
+from pystencils_reco.vesselness import (
+    eigenvalues_3d, eigenvalues_3d_3x3_algorithm, eigenvalues_3d_9)
 
 pytest.importorskip('tensorflow')
 
@@ -110,15 +113,24 @@ def test_3x3_gradient_check(target):
     import tensorflow as tf
 
     shape = (3, 4, 5)
-    xx = tf.random.normal(shape)
-    xy = tf.random.normal(shape)
-    xz = tf.random.normal(shape)
-    yy = tf.random.normal(shape)
-    yz = tf.random.normal(shape)
-    zz = tf.random.normal(shape)
-    eig1 = tf.random.normal(shape)
-    eig2 = tf.random.normal(shape)
-    eig3 = tf.random.normal(shape)
+    # xx = tf.random.normal(shape, dtype=tf.float64)
+    # xy = tf.random.normal(shape, dtype=tf.float64)
+    # xz = tf.random.normal(shape, dtype=tf.float64)
+    # yy = tf.random.normal(shape, dtype=tf.float64)
+    # yz = tf.random.normal(shape, dtype=tf.float64)
+    # zz = tf.random.normal(shape, dtype=tf.float64)
+    # eig1 = tf.random.normal(shape, dtype=tf.float64)
+    # eig2 = tf.random.normal(shape, dtype=tf.float64)
+    # eig3 = tf.random.normal(shape, dtype=tf.float64)
+    xx = tf.ones(shape, dtype=tf.float64)
+    xy = tf.ones(shape, dtype=tf.float64)
+    xz = tf.ones(shape, dtype=tf.float64)
+    yy = tf.ones(shape, dtype=tf.float64)
+    yz = tf.ones(shape, dtype=tf.float64)
+    zz = tf.ones(shape, dtype=tf.float64)
+    eig1 = tf.ones(shape, dtype=tf.float64)
+    eig2 = tf.ones(shape, dtype=tf.float64)
+    eig3 = tf.ones(shape, dtype=tf.float64)
 
     assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
@@ -133,16 +145,18 @@ def test_3x3_gradient_check(target):
         [xx, xy, xz, yy, yz, zz],
         delta=0.001
     )
-    # assert np.allclose(theoretical[0], numerical[0])
     print(theoretical)
     print(numerical)
     pyconrad.imshow(theoretical)
     pyconrad.imshow(numerical)
+    pyconrad.imshow(numerical[0]-theoretical[0])
+    assert np.allclose(theoretical[0], numerical[0])
 
 
 @pytest.mark.parametrize('target', ('cpu',))
 def test_3x3_gradient_check_torch(target):
     import torch
+    torch.set_default_dtype(torch.float)
 
     shape = (3, 4, 5)
     xx = torch.randn(*shape, requires_grad=True)
@@ -159,8 +173,7 @@ def test_3x3_gradient_check_torch(target):
     print(assignments)
     kernel = assignments.compile(target=target)
 
-    torch.autograd.gradcheck(kernel.apply, [xx, xy, xz, yy, yz, zz])
-    # assert np.allclose(theoretical[0], numerical[0])
+    assert torch.autograd.gradcheck(kernel.apply, [xx, xy, xz, yy, yz, zz])
 
 
 @pytest.mark.parametrize('target', ('cpu',))
@@ -168,15 +181,15 @@ def test_3x3_lambdify(target):
     import tensorflow as tf
 
     shape = (3, 4, 5)
-    xx = tf.random.normal(shape)
-    xy = tf.random.normal(shape)
-    xz = tf.random.normal(shape)
-    yy = tf.random.normal(shape)
-    yz = tf.random.normal(shape)
-    zz = tf.random.normal(shape)
-    eig1 = tf.random.normal(shape)
-    eig2 = tf.random.normal(shape)
-    eig3 = tf.random.normal(shape)
+    xx = tf.random.normal(shape, dtype=tf.float64)
+    xy = tf.random.normal(shape, dtype=tf.float64)
+    xz = tf.random.normal(shape, dtype=tf.float64)
+    yy = tf.random.normal(shape, dtype=tf.float64)
+    yz = tf.random.normal(shape, dtype=tf.float64)
+    zz = tf.random.normal(shape, dtype=tf.float64)
+    eig1 = tf.random.normal(shape, dtype=tf.float64)
+    eig2 = tf.random.normal(shape, dtype=tf.float64)
+    eig3 = tf.random.normal(shape, dtype=tf.float64)
 
     assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
@@ -199,3 +212,44 @@ def test_3x3_lambdify(target):
     print(numerical)
     pyconrad.imshow(theoretical)
     pyconrad.imshow(numerical)
+
+
+@pytest.mark.parametrize('target', ('cpu',))
+def test_check_forward(target):
+    import tensorflow as tf
+
+    shape = (1, 1, 1)
+
+    # image0 = 1 + tf.random.uniform((*shape, 3, 3))
+    image0 = 1 + tf.ones((*shape, 3, 3))
+    xx = image0[..., 0, 0]
+    yy = image0[..., 1, 1]
+    zz = image0[..., 2, 2]
+    xy = image0[..., 0, 1]
+    xz = image0[..., 0, 2]
+    yz = image0[..., 1, 2]
+
+    eigenvalues_tf, vectors = tf.linalg.eigh(image0)
+    e1_field = create_field_from_array_like('e1', xx)
+    e2_field = create_field_from_array_like('e2', xx)
+    e3_field = create_field_from_array_like('e3', xx)
+
+    assignments = eigenvalues_3d_3x3_algorithm(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    # assignments = eigenvalues_3d_3x3_algorithm(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    kernel = assignments.compile(target=target)
+
+    r1, r2, r3 = kernel(xx=xx, yy=yy, zz=zz, xy=xy, xz=xz, yz=yz)
+
+    sorted_own = np.array(tf.sort(tf.stack([r1, r2, r3]), axis=0))
+    sorted_tf = np.sort(np.moveaxis(np.array(eigenvalues_tf), -1, 0), axis=0)
+    print(sorted_own.shape)
+    print(sorted_tf.shape)
+
+    print(sorted_own)
+    print(sorted_tf)
+
+    import pyconrad.autoinit
+    pyconrad.imshow(sorted_own)
+    pyconrad.imshow(sorted_tf)
+
+    assert np.allclose(sorted_own, sorted_tf)

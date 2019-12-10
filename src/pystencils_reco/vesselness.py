@@ -133,7 +133,7 @@ def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
     """
     from sympy.matrices import eye
     A = sympy.Matrix([[xx.center, xy.center, xz.center],
-                      [xy.center, yy.center, xy.center],
+                      [xy.center, yy.center, yz.center],
                       [xz.center, yz.center, zz.center]])
     p1, p2, q, p, r, phi, B, e1, e2, e3 = sympy.symbols('p1, p2, q, p, r, phi, B, e1, e2, e3')
 
@@ -145,7 +145,8 @@ def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
         p2: (xx.center - q) ** 2 + (yy.center - q) ** 2 + (zz.center - q) ** 2 + 2 * p1,
         p: sympy.sqrt(p2/6),
         r: B.det() * 0.5,
-        phi: sympy.Piecewise(((sympy.pi / 3), (r <= -1)), ((0), (r >= 1)), ((sympy.acos(r) / 3), (True))),
+        # phi: sympy.Piecewise(((sympy.pi / 3), (r <= -1)), ((0), (r >= 1)), ((sympy.acos(r) / 3), (True))),
+        phi: sympy.acos(r) / 3,
         e1: q + 2 * p * sympy.cos(phi),
         e3: q + 2 * p * sympy.cos(phi + (2 * sympy.pi/3)),
         e2: 3 * q - e1 - e3,
