@@ -124,7 +124,8 @@ def test_3x3_gradient_check(target):
     # eig3 = tf.random.normal(shape, dtype=tf.float64)
 
     symmetric = tf.random.uniform((*shape, 3, 3), dtype=tf.float64)
-    image0 = 1 + tf.ones((*shape, 3, 3), dtype=tf.float64) + 0.2 * (tf.transpose(symmetric, perm=(0, 1, 2, 4, 3)) + symmetric)
+    image0 = 1 + (tf.ones((*shape, 3, 3), dtype=tf.float64) + 0.2 *
+                  (tf.transpose(symmetric, perm=(0, 1, 2, 4, 3)) + symmetric))
     xx = image0[..., 0, 0]
     yy = image0[..., 1, 1]
     zz = image0[..., 2, 2]
