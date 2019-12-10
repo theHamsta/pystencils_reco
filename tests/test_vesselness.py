@@ -122,12 +122,21 @@ def test_3x3_gradient_check(target):
     # eig1 = tf.random.normal(shape, dtype=tf.float64)
     # eig2 = tf.random.normal(shape, dtype=tf.float64)
     # eig3 = tf.random.normal(shape, dtype=tf.float64)
-    xx = tf.ones(shape, dtype=tf.float64)
-    xy = tf.ones(shape, dtype=tf.float64)
-    xz = tf.ones(shape, dtype=tf.float64)
-    yy = tf.ones(shape, dtype=tf.float64)
-    yz = tf.ones(shape, dtype=tf.float64)
-    zz = tf.ones(shape, dtype=tf.float64)
+
+    symmetric = tf.random.uniform((*shape, 3, 3), dtype=tf.float64)
+    image0 = 1 + tf.ones((*shape, 3, 3), dtype=tf.float64) + 0.2 * (tf.transpose(symmetric, perm=(0, 1, 2, 4, 3)) + symmetric)
+    xx = image0[..., 0, 0]
+    yy = image0[..., 1, 1]
+    zz = image0[..., 2, 2]
+    xy = image0[..., 0, 1]
+    xz = image0[..., 0, 2]
+    yz = image0[..., 1, 2]
+    # xx = tf.ones(shape, dtype=tf.float64)
+    # xy = tf.ones(shape, dtype=tf.float64)
+    # xz = tf.ones(shape, dtype=tf.float64)
+    # yy = tf.ones(shape, dtype=tf.float64)
+    # yz = tf.ones(shape, dtype=tf.float64)
+    # zz = tf.ones(shape, dtype=tf.float64)
     eig1 = tf.ones(shape, dtype=tf.float64)
     eig2 = tf.ones(shape, dtype=tf.float64)
     eig3 = tf.ones(shape, dtype=tf.float64)
@@ -150,7 +159,7 @@ def test_3x3_gradient_check(target):
     pyconrad.imshow(theoretical)
     pyconrad.imshow(numerical)
     pyconrad.imshow(numerical[0]-theoretical[0])
-    assert np.allclose(theoretical[0], numerical[0])
+    assert np.allclose(theoretical[0], numerical[0], rtol=1e-2, atol=1e-3)
 
 
 @pytest.mark.parametrize('target', ('cpu',))
