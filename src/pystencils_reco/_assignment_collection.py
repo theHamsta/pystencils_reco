@@ -151,8 +151,10 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         if self.kwargs:
             if hasattr(kernel, 'forward'):
                 kernel.class_kwargs = self.kwargs
-            else:
+            elif isinstance(kernel, pystencils.kernel_wrapper.KernelWrapper):
                 kernel = KwargsKernelWrapper(kernel, self.kwargs)
+            else:
+                kernel.__call__ = partial(kernel, **self.kwargs)
 
         return kernel
 
