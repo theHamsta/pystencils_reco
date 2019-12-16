@@ -140,7 +140,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             if hasattr(kernel, 'forward'):
                 kernel.class_kwargs = self.kwargs
             else:
-                kernel.__call__ = partial(kernel, **self.kwargs)
+                kernel.__call__ = partial(kernel, *self.args, **self.kwargs)
 
         return kernel
 
