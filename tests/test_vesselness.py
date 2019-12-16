@@ -21,71 +21,9 @@ import sympy
 import pystencils
 from pystencils_autodiff.field_tensor_conversion import create_field_from_array_like
 from pystencils_reco.vesselness import (
-    eigenvalues_3d, eigenvalues_3d_3x3_algorithm, eigenvalues_3d_9)
+    eigenvalues_3d, eigenvalues_3x3, eigenvalues_3d_9)
 
 pytest.importorskip('tensorflow')
-
-
-def test_vesselness():
-    import tensorflow as tf
-
-    image0 = tf.random.uniform((20, 30, 40, 3, 3))
-    eigenvalues_tf, _ = tf.linalg.eigh(image0)
-
-    sorted_eigenvalues = tf.sort(eigenvalues_tf, axis=-1)
-
-    l1 = sorted_eigenvalues[..., -1]
-    l2 = sorted_eigenvalues[..., -2]
-    l3 = sorted_eigenvalues[..., -3]
-
-    import numpy as np
-
-    image = np.random.rand(30, 40, 50).astype(np.float32)
-    result = np.random.rand(30, 40, 50, 3).astype(np.float32)
-
-    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
-    print(assignments)
-    kernel = assignments.compile(use_auto_for_assignments=True)
-    kernel(eigenvaluefield=result, xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
-
-    import pycuda.autoinit
-    from pycuda.gpuarray import to_gpu
-
-    image = to_gpu(np.random.rand(30, 40, 50).astype(np.float32))
-    result = to_gpu(np.random.rand(30, 40, 50, 3).astype(np.float32))
-
-    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
-    print(assignments)
-    kernel = assignments.compile(use_auto_for_assignments=True)
-    kernel(eigenvaluefield=result, xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
-
-    image = tf.random.normal((30, 40, 50))
-    result = tf.random.normal((30, 40, 50, 3))
-
-    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
-    print(assignments)
-    kernel = assignments.compile(use_auto_for_assignments=True, target='cpu')
-    eigenvalues = kernel(xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
-    print(eigenvalues.shape)
-
-    import pickle
-    pickle.loads(pickle.dumps(kernel))
-
-
-@pytest.mark.parametrize('target', ('cpu',))
-def test_grad(target):
-    import tensorflow as tf
-
-    image = tf.random.normal((30, 40, 50))
-    result = tf.random.normal((30, 40, 50, 3))
-
-    assignments = eigenvalues_3d(result, image, image, image, image, image, image)
-    print(assignments)
-    kernel = assignments.compile(use_auto_for_assignments=True, target=target)
-    eigenvalues = kernel(xx=image, xy=image, yy=image, xz=image, zz=image, yz=image)
-    print(eigenvalues.shape)
-
-    pyconrad.imshow(eigenvalues)
 
 
 @pytest.mark.parametrize('target', ('cpu',))
@@ -102,7 +40,7 @@ def test_3x3(target):
     eig2 = tf.random.normal((30, 40, 50))
     eig3 = tf.random.normal((30, 40, 50))
 
-    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
     kernel = assignments.compile(use_auto_for_assignments=True, target=target)
     eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
@@ -142,7 +80,7 @@ def test_3x3_gradient_check(target):
     eig2 = tf.ones(shape, dtype=tf.float64)
     eig3 = tf.ones(shape, dtype=tf.float64)
 
-    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
     kernel = assignments.compile(target=target)
     def fun(xx, xy, xz, yy, yz, zz):
@@ -163,7 +101,7 @@ def test_3x3_gradient_check(target):
     assert np.allclose(theoretical[0], numerical[0], rtol=1e-2, atol=1e-3)
 
 
-@pytest.mark.parametrize('repetition', range(3))
+@pytest.mark.parametrize('repetition', range(1))
 @pytest.mark.parametrize('target', ('cpu',))
 def test_3x3_gradient_check_torch(target, repetition):
     import torch
@@ -180,7 +118,7 @@ def test_3x3_gradient_check_torch(target, repetition):
     eig2 = torch.randn(*shape)
     eig3 = torch.randn(*shape)
 
-    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
     kernel = assignments.compile(target=target)
 
@@ -203,7 +141,7 @@ def test_3x3_lambdify(target):
     eig2 = tf.random.normal(shape, dtype=tf.float64)
     eig3 = tf.random.normal(shape, dtype=tf.float64)
 
-    assignments = eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
     symbols = sympy.symbols('xx xy xz yy yz zz')
     kernel = assignments.lambdify(symbols, module='tensorflow')
@@ -247,8 +185,8 @@ def test_check_forward(target):
     e2_field = create_field_from_array_like('e2', xx)
     e3_field = create_field_from_array_like('e3', xx)
 
-    assignments = eigenvalues_3d_3x3_algorithm(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
-    # assignments = eigenvalues_3d_3x3_algorithm(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    # assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
     kernel = assignments.compile(target=target)
 
     r1, r2, r3 = kernel(xx=xx, yy=yy, zz=zz, xy=xy, xz=xz, yz=yz)
@@ -261,10 +199,10 @@ def test_check_forward(target):
     print(sorted_own)
     print(sorted_tf)
 
-    import pyconrad.autoinit
-    pyconrad.imshow(sorted_own)
-    pyconrad.imshow(sorted_tf)
-    pyconrad.imshow(sorted_own - sorted_tf)
+    # import pyconrad.autoinit
+    # pyconrad.imshow(sorted_own)
+    # pyconrad.imshow(sorted_tf)
+    # pyconrad.imshow(sorted_own - sorted_tf)
 
     max_diff = np.max(np.abs(sorted_own - sorted_tf))
     print(max_diff)

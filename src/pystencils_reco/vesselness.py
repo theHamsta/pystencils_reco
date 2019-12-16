@@ -121,7 +121,7 @@ def eigenvalues_3d_9(e1, e2, e3, xx, xy, xz, yy, yz, zz):
 
 
 @crazy
-def eigenvalues_3d_3x3_algorithm(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
+def eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
     """
     From https://en.wikipedia.org/wiki/Eigenvalue_algorithm#3%C3%973_matrices
 
