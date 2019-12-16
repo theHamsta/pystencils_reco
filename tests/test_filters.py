@@ -11,11 +11,11 @@ import os
 
 import numpy as np
 import pytest
+import sympy
 
 import pystencils
 import pystencils.simp
 import pystencils_reco.filters
-import sympy
 from pystencils_reco.stencils import BoxStencil
 
 try:
@@ -54,7 +54,7 @@ def test_mean_filter_with_crazy_compilation():
 
     assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
     assignments.compile('gpu')
-    assignments.compile('cpu')()
+    assignments.compile('cpu')(input_field=x, output_field=y)
 
 
 def test_crazy_target_detection():
@@ -160,5 +160,3 @@ def test_gauss_filter_evaluation():
     kernel = pystencils_reco.filters.gauss_filter(
         x, y, BoxStencil(3, ndim=2, with_center=False), sigma=sympy.Symbol('a')).compile()
     kernel(x=x_array[0], y=y_array[0], a=0.7)
-
-
