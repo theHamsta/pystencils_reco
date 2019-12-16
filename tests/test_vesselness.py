@@ -18,10 +18,8 @@ import numpy as np
 import pytest
 import sympy
 
-import pystencils
 from pystencils_autodiff.field_tensor_conversion import create_field_from_array_like
-from pystencils_reco.vesselness import (
-    eigenvalues_3d, eigenvalues_3x3, eigenvalues_3d_9)
+from pystencils_reco.vesselness import eigenvalues_3x3
 
 pytest.importorskip('tensorflow')
 
