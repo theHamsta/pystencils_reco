@@ -96,7 +96,7 @@ def eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
         p1: xy.center ** 2 + xz.center ** 2 + yz.center ** 2,
         q: A.trace() / 3,
         p2: (xx.center - q) ** 2 + (yy.center - q) ** 2 + (zz.center - q) ** 2 + 2 * p1,
-        p: sympy.sqrt(p2/6),
+        p: sympy.sqrt(p2 / 6),
         r: B.det() * 0.5,
         phi: sympy.Piecewise(((sympy.pi / 3), (r <= -1)), ((0), (r >= 1)), ((sympy.acos(r) / 3), (True))),
         # phi: sympy.acos(r) / 3,
