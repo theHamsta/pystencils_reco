@@ -155,15 +155,15 @@ def test_3x3_gradient_check(target):
         [xx, xy, xz, yy, yz, zz],
         delta=0.001
     )
-    print(theoretical)
-    print(numerical)
-    pyconrad.imshow(theoretical)
-    pyconrad.imshow(numerical)
-    pyconrad.imshow(numerical[0]-theoretical[0])
+    # print(theoretical)
+    # print(numerical)
+    # pyconrad.imshow(theoretical)
+    # pyconrad.imshow(numerical)
+    # pyconrad.imshow(numerical[0]-theoretical[0])
     assert np.allclose(theoretical[0], numerical[0], rtol=1e-2, atol=1e-3)
 
 
-@pytest.mark.parametrize('repetition', range(20))
+@pytest.mark.parametrize('repetition', range(3))
 @pytest.mark.parametrize('target', ('cpu',))
 def test_3x3_gradient_check_torch(target, repetition):
     import torch
