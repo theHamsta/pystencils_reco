@@ -28,10 +28,6 @@ def forward_projection(input_volume_field: pystencils.Field,
                        projection_matrix,
                        step_size=1,
                        cubic_bspline_interpolation=False):
-    print(type(projection_matrix))
-    print(hash(projection_matrix))
-    print(hash(output_projections_field))
-    print(hash(input_volume_field))
     # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
 
     interpolation_mode = 'cubic_spline' if cubic_bspline_interpolation else 'linear'
