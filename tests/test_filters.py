@@ -64,7 +64,7 @@ def test_crazy_target_detection():
     y = zeros_like(x)
 
     assignments = pystencils_reco.filters.mean_filter(x, y, BoxStencil(3, ndim=2))
-    assignments.compile()()
+    assignments.compile()(input_field=x, output_field=y)
 
 
 def test_mean_filter_evaluation():
