@@ -46,16 +46,9 @@ def test_genereric_projection():
     projection_matrix = pystencils_reco.matrix_symbols('T', pystencils.data_types.create_type('float'), 3, 4)
     from sympy.matrices.dense import MutableDenseMatrix
     MutableDenseMatrix.__hash__ = lambda x: 1  # hash(tuple(x))
-    print(hash(1))
-    print(hash(volume))
-    print(hash(projections))
-    print(hash(projections))
-    print(type(projection_matrix))
-    print(hash(projection_matrix))
 
     assignments = forward_projection(volume, projections, projection_matrix)
     print(assignments)
-    print(hash(assignments))
     kernel = assignments.compile('gpu')
     pystencils.show_code(kernel)
 
