@@ -8,12 +8,24 @@
 
 """
 
+import types
 from enum import Enum
 from functools import partial
 from itertools import chain
 
 import pystencils
 from pystencils.cache import disk_cache_no_fallback
+
+
+class KwargsKernelWrapper(pystencils.kernel_wrapper.KernelWrapper):
+
+    def __init__(self, base, kwargs):
+        self.kwargs = kwargs
+        super().__init__(base.kernel, base.parameters, base.ast)
+
+    def __call__(self, **kwargs):
+        self.kwargs.update(kwargs)
+        super().__call__(**self.kwargs)
 
 
 class NdArrayType(str, Enum):
@@ -140,7 +152,7 @@ class AssignmentCollection(pystencils.AssignmentCollection):
             if hasattr(kernel, 'forward'):
                 kernel.class_kwargs = self.kwargs
             else:
-                kernel.__call__ = partial(kernel, *self.args, **self.kwargs)
+                kernel = KwargsKernelWrapper(kernel, self.kwargs)
 
         return kernel
 

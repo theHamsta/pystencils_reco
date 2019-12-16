@@ -20,7 +20,7 @@ from pystencils.cache import disk_cache, disk_cache_no_fallback
 from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 
 
-def crazy(function):
+def crazy(function) -> pystencils_reco.AssignmentCollection:
     from pystencils_autodiff.field_tensor_conversion import (
         create_field_from_array_like, is_array_like)
 
