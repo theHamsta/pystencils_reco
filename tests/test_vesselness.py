@@ -187,6 +187,7 @@ def test_3x3_gradient_check_torch(target):
 
 
 @pytest.mark.parametrize('target', ('cpu',))
+@pytest.mark.xfail(reason="Bug in sympy lambdify with ceil", strict=False)
 def test_3x3_lambdify(target):
     import tensorflow as tf
 
