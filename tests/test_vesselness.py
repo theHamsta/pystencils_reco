@@ -166,7 +166,7 @@ def test_3x3_gradient_check(target):
 @pytest.mark.parametrize('target', ('cpu',))
 def test_3x3_gradient_check_torch(target):
     import torch
-    torch.set_default_dtype(torch.float)
+    torch.set_default_dtype(torch.double)
 
     shape = (3, 4, 5)
     xx = torch.randn(*shape, requires_grad=True)
