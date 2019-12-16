@@ -9,8 +9,7 @@
 """
 
 from pystencils.field import FieldType
-from pystencils_autodiff.field_tensor_conversion import \
-    ArrayWithIndexDimensions
+from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 from pystencils_reco import crazy
 
 
@@ -25,7 +24,7 @@ def test_index_dimension_hack():
     import numpy as np
 
     x = np.zeros((20, 10))
-    y = ArrayWithIndexDimensions(np.zeros((20, 10)), 1, FieldType.CUSTOM)
+    y = ArrayWrapper(np.zeros((20, 10)), 1, FieldType.CUSTOM)
     print(y.shape)
 
     foo(x, y)
