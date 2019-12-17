@@ -7,7 +7,6 @@
 """
 
 """
-import os
 
 import numpy as np
 import pytest
@@ -20,9 +19,6 @@ from pystencils_reco import crazy
 from pystencils_reco.filters import mean_filter
 from pystencils_reco.projection import forward_projection
 from pystencils_reco.stencils import BallStencil, BoxStencil
-
-if 'PYTORCH_TEST' not in os.environ:
-    pytest.skip('torch destroys pycuda tests',  allow_module_level=True)
 
 
 def test_pytorch():
