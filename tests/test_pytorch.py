@@ -80,8 +80,8 @@ def test_texture(with_texture):
     rtn = kernel.forward(x=x_tensor, y=y_tensor)
     rtn = rtn[0].cpu()
     print(rtn)
-    import pyconrad.autoinit
-    pyconrad.show_everything()
+    # import pyconrad.autoinit
+    # pyconrad.show_everything()
 
 
 @pytest.mark.parametrize('ndim', (3,))
@@ -94,9 +94,9 @@ def test_texture_crazy(ndim):
     kernel = pystencils_reco.resampling.scale_transform(x, y, scale).compile(target='gpu')
     print(kernel.code)
     rtn = kernel().forward(input_field=x, output_field=y, scale=2)
-    import pyconrad.autoinit
-    pyconrad.imshow(x)
-    pyconrad.imshow(rtn[0])
+    # import pyconrad.autoinit
+    # pyconrad.imshow(x)
+    # pyconrad.imshow(rtn[0])
 
 
 def test_numpy_crazy():
@@ -109,9 +109,9 @@ def test_numpy_crazy():
 
     kernel = kernel(x, y).compile()
     kernel()
-    import pyconrad.autoinit
-    pyconrad.imshow(x, 'x')
-    pyconrad.imshow(y, 'y')
+    # import pyconrad.autoinit
+    # pyconrad.imshow(x, 'x')
+    # pyconrad.imshow(y, 'y')
 
 
 def test_torch_crazy():
@@ -130,10 +130,10 @@ def test_torch_crazy():
     print("kernel.code: " + str(kernel.code))
     rtn = kernel.forward(x=x, y=y)[0]
     assert rtn is y
-    import pyconrad.autoinit
-    pyconrad.imshow(x)
-    pyconrad.imshow(rtn)
-    pyconrad.imshow(y)
+    # import pyconrad.autoinit
+    # pyconrad.imshow(x)
+    # pyconrad.imshow(rtn)
+    # pyconrad.imshow(y)
 
 
 def test_projection():

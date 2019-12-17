@@ -181,7 +181,10 @@ class AssignmentCollection(pystencils.AssignmentCollection):
         constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
 
         if not self._autodiff:
-            self._autodiff = _create_autodiff(self, constant_fields, **kwargs)
+            if hasattr(self, '_create_autodiff'):
+                self._create_autodiff(constant_fields, **kwargs)
+            else:
+                self._autodiff = _create_autodiff(self, constant_fields, **kwargs)
 
         op = self._autodiff.create_tensorflow_op(backend=backend, use_cuda=(target == 'gpu'))
 
