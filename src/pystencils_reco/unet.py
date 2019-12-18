@@ -28,8 +28,28 @@ def relu(input, result):
 
 
 @crazy
-def max_pooling(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
-                result: {'index_dimensions': 1}):
+def max_pooling(input: {'field_type': FieldType.CUSTOM},
+                result):
+    assert input.spatial_dimensions == result.spatial_dimensions
+    assert input.index_shape == result.index_shape
+    assignments = []
+
+    ndim = input.spatial_dimensions
+
+    offsets = itertools.product((0, 1), repeat=ndim)
+    assignments.append(
+        pystencils.Assignment(result.center,
+                              sympy.Max(*[input.absolute_access(2 * pystencils.x_vector(ndim) + sympy.Matrix(offset), ())  # noqa
+                                          for offset in offsets])
+                              )
+    )
+
+    return assignments
+
+
+@crazy
+def max_pooling_channels(input: {'index_dimensions': 1, 'field_type': FieldType.CUSTOM},
+                         result: {'index_dimensions': 1}):
     assert input.spatial_dimensions == result.spatial_dimensions
     assert input.index_shape == result.index_shape
     assignments = []

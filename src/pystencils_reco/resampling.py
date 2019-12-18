@@ -8,6 +8,7 @@
 Implements common resampling operations like rotations and scalings
 """
 
+import itertools
 import types
 from collections.abc import Iterable
 
@@ -125,3 +126,21 @@ def translate(input_field: pystencils.Field,
         output_field.center: input_field.interpolated_access(
             input_field.physical_to_index(output_field.physical_coordinates - translation), interpolation_mode)
     }
+
+
+@crazy
+def downsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
+               result,
+               factor):
+    assert input.spatial_dimensions == result.spatial_dimensions
+    assert input.index_shape == result.index_shape
+    assignments = []
+
+    ndim = input.spatial_dimensions
+
+    assignments.append(
+        pystencils.Assignment(result.center,
+                              input.absolute_access(factor * pystencils.x_vector(ndim), ()))
+    )
+
+    return assignments
