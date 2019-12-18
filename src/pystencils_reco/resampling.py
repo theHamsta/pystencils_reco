@@ -138,9 +138,5 @@ def downsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
 
     ndim = input.spatial_dimensions
 
-    assignments.append(
-        pystencils.Assignment(result.center,
-                              input.absolute_access(factor * pystencils.x_vector(ndim), ()))
-    )
-
-    return assignments
+    return {result.center,
+            input.absolute_access(factor * pystencils.x_vector(ndim), ())}
