@@ -134,7 +134,6 @@ def downsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
                factor):
     assert input.spatial_dimensions == result.spatial_dimensions
     assert input.index_shape == result.index_shape
-    assignments = []
 
     ndim = input.spatial_dimensions
 
