@@ -100,12 +100,12 @@ def test_3x3_gradient_check(target):
 
 
 @pytest.mark.parametrize('repetition', range(1))
-@pytest.mark.parametrize('target', ('cpu',))
+@pytest.mark.parametrize('target', ('gpu',))
 def test_3x3_gradient_check_torch(target, repetition):
     import torch
     torch.set_default_dtype(torch.double)
 
-    shape = (3, 4, 5)
+    shape = (20, 40, 50)
     xx = torch.randn(*shape, requires_grad=True)
     xy = torch.randn(*shape, requires_grad=True)
     xz = torch.randn(*shape, requires_grad=True)
@@ -115,6 +115,17 @@ def test_3x3_gradient_check_torch(target, repetition):
     eig1 = torch.randn(*shape)
     eig2 = torch.randn(*shape)
     eig3 = torch.randn(*shape)
+
+    if target == 'gpu':
+        xx = xx.cuda()
+        xy = xy.cuda()
+        xz = xz.cuda()
+        yy = yy.cuda()
+        yz = yz.cuda()
+        zz = zz.cuda()
+        eig1 = eig1.cuda()
+        eig2 = eig2.cuda()
+        eig3 = eig3.cuda()
 
     assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
@@ -166,7 +177,7 @@ def test_3x3_lambdify(target):
 def test_check_forward(target):
     import tensorflow as tf
 
-    shape = (20, 20, 20)
+    shape = (5, 7, 6)
 
     # image0 = 1 + tf.random.uniform((*shape, 3, 3))
     symmetric = tf.random.uniform((*shape, 3, 3))
@@ -206,3 +217,28 @@ def test_check_forward(target):
     print(max_diff)
 
     assert np.allclose(sorted_own, sorted_tf, rtol=1e-2, atol=1e-3)
+
+
+def test_check_forward_pycuda():
+    pytest.importorskip('pycuda')
+    import pycuda.autoinit
+    from pycuda.gpuarray import to_gpu
+
+    shape = (200, 200, 200)
+
+    xx = to_gpu(np.ones(shape))
+    yy = to_gpu(np.ones(shape))
+    zz = to_gpu(np.ones(shape))
+    xy = to_gpu(np.ones(shape))
+    xz = to_gpu(np.ones(shape))
+    yz = to_gpu(np.ones(shape))
+
+    e1_field = to_gpu(np.ones(shape))
+    e2_field = to_gpu(np.ones(shape))
+    e3_field = to_gpu(np.ones(shape))
+
+    assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    # assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    kernel = assignments.compile()
+
+    kernel()
