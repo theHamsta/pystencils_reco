@@ -90,19 +90,3 @@ def fixed_boundary_handling(function):
 def crazy_compile(crazy_function, *args, **kwargs):
 
     return crazy_function(*args, **kwargs).compile()
-
-
-# class requires(object):
-# """ Decorator for registering requirements on print methods. """
-
-# def __init__(self, **kwargs):
-# self._decorator_kwargs = kwargs
-
-# def __call__(self, function):
-# def _method_wrapper(self, *args, **kwargs):
-# for k, v in self._decorator_kwargs.items():
-# obj, member = k.split('__')
-# setattr(kwargs[obj], member, v)
-
-# return function(*args, **kwargs)
-# return functools.wraps(function)(_method_wrapper)
