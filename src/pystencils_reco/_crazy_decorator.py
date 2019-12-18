@@ -16,7 +16,7 @@ import sympy
 import pystencils
 import pystencils_autodiff.transformations
 import pystencils_reco
-from pystencils.cache import disk_cache, disk_cache_no_fallback
+from pystencils.cache import disk_cache
 from pystencils_autodiff.field_tensor_conversion import ArrayWrapper
 
 
@@ -24,8 +24,8 @@ def crazy(function) -> pystencils_reco.AssignmentCollection:
     from pystencils_autodiff.field_tensor_conversion import (
         create_field_from_array_like, is_array_like)
 
+    # @disk_cache_no_fallback
     @functools.wraps(function)
-    @disk_cache_no_fallback
     def wrapper(*args, **kwargs):
         import pycuda.gpuarray
         inspection = inspect.getfullargspec(function)
