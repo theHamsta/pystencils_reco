@@ -8,7 +8,6 @@
 Implements common resampling operations like rotations and scalings
 """
 
-import itertools
 import types
 from collections.abc import Iterable
 
@@ -17,6 +16,7 @@ import sympy
 import pystencils
 import pystencils.autodiff
 from pystencils.autodiff import AdjointField
+from pystencils.data_types import cast_func, create_type
 from pystencils_reco import AssignmentCollection, crazy
 
 
@@ -122,10 +122,46 @@ def translate(input_field: pystencils.Field,
               translation,
               interpolation_mode='linear'):
 
-    return {
-        output_field.center: input_field.interpolated_access(
-            input_field.physical_to_index(output_field.physical_coordinates - translation), interpolation_mode)
-    }
+    def create_autodiff(self, constant_fields=None, **kwargs):
+        backward_assignments = translate(AdjointField(output_field), AdjointField(input_field), -translation)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            assignments, "", backward_assignments=backward_assignments, **kwargs)
+
+    if isinstance(translation, pystencils.Field):
+        translation = translation.center_vector
+
+    assignments = AssignmentCollection(
+        {
+            output_field.center: input_field.interpolated_access(
+                input_field.physical_to_index(output_field.physical_coordinates - translation), interpolation_mode)
+        })
+    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+    return assignments
+
+
+@crazy
+def upsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
+             result,
+             factor):
+
+    ndim = input.spatial_dimensions
+    here = pystencils.x_vector(ndim)
+
+    assignments = AssignmentCollection(
+        {result.center:
+            pystencils.astnodes.ConditionalFieldAccess(
+                input.absolute_access(tuple(cast_func(sympy.S(1) / factor * h,
+                                                      create_type('int64')) for h in here), ()),
+                sympy.Or(*[s % cast_func(factor, 'int64') > 0 for s in here]))
+         })
+
+    def create_autodiff(self, constant_fields=None, **kwargs):
+        backward_assignments = downsample(AdjointField(result), AdjointField(input), factor)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            assignments, "", backward_assignments=backward_assignments, **kwargs)
+
+    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+    return assignments
 
 
 @crazy
@@ -137,5 +173,14 @@ def downsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
 
     ndim = input.spatial_dimensions
 
-    return {result.center,
-            input.absolute_access(factor * pystencils.x_vector(ndim), ())}
+    assignments = AssignmentCollection({result.center:
+                                        input.absolute_access(factor * pystencils.x_vector(ndim), ())})
+
+    def create_autodiff(self, constant_fields=None, **kwargs):
+        backward_assignments = upsample(AdjointField(result), AdjointField(input), factor)
+        self._autodiff = pystencils.autodiff.AutoDiffOp(
+            assignments, "", backward_assignments=backward_assignments, **kwargs)
+
+    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+
+    return assignments

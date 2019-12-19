@@ -7,11 +7,13 @@
 """
 
 """
+from os.path import dirname, join
+
 import numpy as np
+import skimage.io
 
 import pystencils
-from pystencils_reco.resampling import downsample, scale_transform
-from pystencils_reco.unet import max_pooling
+from pystencils_reco.resampling import downsample, scale_transform, translate, upsample
 
 try:
     import pyconrad.autoinit
@@ -22,7 +24,7 @@ except Exception:
 
 def test_superresolution():
 
-    x, y = np.random.rand(20, 10),  np.zeros((20, 10))
+    x, y = np.random.rand(20, 10), np.zeros((20, 10))
 
     kernel = scale_transform(x, y, 0.5).compile()
     print(pystencils.show_code(kernel))
@@ -34,10 +36,32 @@ def test_superresolution():
 def test_downsample():
     shape = (20, 10)
 
-    x, y = np.random.rand(*shape),  np.zeros(shape)
+    x, y = np.random.rand(*shape), np.zeros(tuple(s // 2 for s in shape))
 
     kernel = downsample(x, y, 2).compile()
     print(pystencils.show_code(kernel))
     kernel()
 
     pyconrad.show_everything()
+
+
+def test_warp():
+    import torch
+    NUM_LENNAS = 5
+    perturbation = 0.1
+
+    lenna_file = join(dirname(__file__), "test_data", "lenna.png")
+    lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
+
+    warp_vectors = list(perturbation * torch.randn(lenna.shape + (2,)) for _ in range(NUM_LENNAS))
+
+    warped = [torch.zeros(lenna.shape) for _ in range(NUM_LENNAS)]
+
+    warp_kernel = translate(lenna, warped[0], pystencils.autodiff.ArrayWrapper(
+        warp_vectors[0], index_dimensions=1), interpolation_mode='linear').compile()
+
+    for i in range(len(warped)):
+        warp_kernel(lenna[i], warped[i], warp_vectors[i])
+
+
+test_warp()
