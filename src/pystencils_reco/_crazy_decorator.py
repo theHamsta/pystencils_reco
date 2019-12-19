@@ -26,7 +26,7 @@ def crazy(function) -> pystencils_reco.AssignmentCollection:
     # @disk_cache_no_fallback
     @functools.wraps(function)
     def wrapper(*args, **kwargs):
-        import pycuda.gpuarray
+        import pycuda.gpuarray  # TODO(seitz): remove dependency
         inspection = inspect.getfullargspec(function)
         arg_names = inspection.args
         annotations = inspection.annotations
