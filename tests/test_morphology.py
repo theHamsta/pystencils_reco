@@ -25,10 +25,17 @@ except ImportError:  # NOQA
 
 
 def test_morphology():
-    x, y = pystencils.fields('x,y: uint8[2d]')
-    x_array = np.random.rand(20, 23, 25).astype(np.uint8)
-    y_array = np.random.rand(20, 23, 25).astype(np.uint8)
-    # TODO
+    import pytest
+    pytest.importorskip("pycuda")
+    from pycuda.gpuarray import to_gpu, zeros_like
+    x = to_gpu((np.random.rand(21, 23, 25) > 0.9).astype(np.uint8))
+    y = zeros_like(x)
+
+    dilation = pystencils_reco.morphology.binary_dilation(x, y, BallStencil(1, ndim=3)).compile()
+
+    for _ in range(1000000):
+        dilation(x=x, y=y)
+        x, y = y, x
 
 
 def test_visualize_morphology():
