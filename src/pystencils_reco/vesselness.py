@@ -29,7 +29,7 @@ use_complex_sqrt = ReplaceOptim(
 
 
 @crazy
-def eigenvalues_3d(eigenvaluefield: {'index_dimensions': 1}, xx, xy, xz, yy, yz, zz):
+def eigenvalues_3d(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz):
 
     H = sympy.Matrix([[xx.center, xy.center, xz.center],
                       [xy.center, yy.center, yz.center],
@@ -39,7 +39,7 @@ def eigenvalues_3d(eigenvaluefield: {'index_dimensions': 1}, xx, xy, xz, yy, yz,
     eigenvalues = list(H.eigenvals())
 
     assignments = pystencils.AssignmentCollection({
-        eigenvaluefield.center(i): sympy.re(eigenvalues[i]) for i in range(3)
+        [eig1.center, eig2.center, eig3.center][i]: sympy.re(eigenvalues[i]) for i in range(3)
     })
 
     class complex_symbol_generator():
