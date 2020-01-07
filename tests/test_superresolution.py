@@ -62,6 +62,3 @@ def test_warp():
 
     for i in range(len(warped)):
         warp_kernel(lenna[i], warped[i], warp_vectors[i])
-
-
-test_warp()
