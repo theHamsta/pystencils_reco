@@ -10,6 +10,7 @@ Implements common resampling operations like rotations and scalings
 
 import types
 from collections.abc import Iterable
+from typing import Union
 
 import sympy
 
@@ -38,7 +39,7 @@ def generic_spatial_matrix_transform(input_field,
         inverse_matrix @ output_field.physical_coordinates, staggered=False)
 
     assignments = AssignmentCollection({
-        output_field.center():
+        output_field.center:
         texture.at(output_coordinate)
     })
 
@@ -184,3 +185,17 @@ def downsample(input: {'field_type': pystencils.field.FieldType.CUSTOM},
     assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
 
     return assignments
+
+
+@crazy
+def resample_to_shape(input,
+                      spatial_shape: Union[tuple, pystencils.Field],
+                      ):
+    if hasattr(spatial_shape, 'spatial_shape'):
+        spatial_shape = spatial_shape.spatial_shape
+
+    output_field = pystencils.Field.create_fixed_size(
+        'output', spatial_shape + input.index_shape, input.index_dimensions, input.dtype.numpy_dtype)
+    output_field.coordinate_transform = sympy.DiagMatrix(sympy.Matrix([input.spatial_shape[i] / s
+                                                                       for i, s in enumerate(spatial_shape)]))
+    return resample(input, output_field)
