@@ -84,8 +84,8 @@ def test_polar_transform():
     resample(x, y).compile()(x=lenna, y=transformed)
 
     pyconrad.show_everything()
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
 
 
 def test_polar_transform2():
@@ -108,8 +108,8 @@ def test_polar_transform2():
     resample(x, y).compile()(x=lenna, y=transformed)
 
     pyconrad.show_everything()
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
 
 
 def test_polar_inverted_transform():
@@ -139,8 +139,8 @@ def test_polar_inverted_transform():
     resample(y, x).compile()(x=back_transformed, y=transformed)
 
     pyconrad.show_everything()
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
 
 
 def test_shift():
@@ -169,8 +169,8 @@ def test_shift():
     assert diff is not None
 
     pyconrad.show_everything()
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
 
 
 def test_motion_model():
@@ -215,8 +215,8 @@ def test_motion_model():
                                                      t_y=translate_y)
 
     pyconrad.show_everything()
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
 
 
 def test_motion_model2():
@@ -249,5 +249,5 @@ def test_motion_model2():
 
     pyconrad.show_everything()
 
-    while True:
-        sleep(100)
+    # while True:
+    # sleep(100)
