@@ -120,8 +120,9 @@ def test_polar_inverted_transform():
                 (args.norm(), sympy.atan2(args[1]-x.shape[1]/2, args[0]-x.shape[0]/2) / sympy.pi * x.shape[1]/2))
 
         def inv():
-            return lambda l: sympy.Matrix((sympy.cos(l[1] * sympy.pi / x.shape[1]*2) * l[0],
-                                           sympy.sin(l[1] * sympy.pi / x.shape[1]*2) * l[0])) + sympy.Matrix(x.shape) * 0.5
+            return lambda l: (sympy.Matrix((sympy.cos(l[1] * sympy.pi / x.shape[1]*2) * l[0],
+                                            sympy.sin(l[1] * sympy.pi / x.shape[1]*2) * l[0]))
+                              + sympy.Matrix(x.shape) * 0.5)
 
     lenna_file = join(dirname(__file__), "test_data", "lenna.png")
     lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
