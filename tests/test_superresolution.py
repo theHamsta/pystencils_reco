@@ -8,7 +8,6 @@
 
 """
 from os.path import dirname, join
-from time import sleep
 
 import numpy as np
 import skimage.io
