@@ -93,7 +93,7 @@ def test_polar_transform2():
     class PolarTransform(sympy.Function):
         def eval(args):
             return sympy.Matrix(
-                (args.norm(), sympy.atan2(args[1]-x.shape[1]/2, args[0]-x.shape[0]/2) / sympy.pi * x.shape[1]/2))
+                (args.norm(), sympy.atan2(args[1] - x.shape[1] / 2, args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
 
     x.set_coordinate_origin_to_field_center()
     y.coordinate_transform = PolarTransform
@@ -117,11 +117,11 @@ def test_polar_inverted_transform():
     class PolarTransform(sympy.Function):
         def eval(args):
             return sympy.Matrix(
-                (args.norm(), sympy.atan2(args[1]-x.shape[1]/2, args[0]-x.shape[0]/2) / sympy.pi * x.shape[1]/2))
+                (args.norm(), sympy.atan2(args[1] - x.shape[1] / 2, args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
 
         def inv():
-            return lambda l: (sympy.Matrix((sympy.cos(l[1] * sympy.pi / x.shape[1]*2) * l[0],
-                                            sympy.sin(l[1] * sympy.pi / x.shape[1]*2) * l[0]))
+            return lambda l: (sympy.Matrix((sympy.cos(l[1] * sympy.pi / x.shape[1] * 2) * l[0],
+                                            sympy.sin(l[1] * sympy.pi / x.shape[1] * 2) * l[0]))
                               + sympy.Matrix(x.shape) * 0.5)
 
     lenna_file = join(dirname(__file__), "test_data", "lenna.png")
@@ -251,3 +251,16 @@ def test_motion_model2():
 
     # while True:
     # sleep(100)
+
+
+def test_spatial_derivative():
+    x, y = pystencils.fields('x, y:  float32[2d]')
+    tx, ty = pystencils.fields('t_x, t_y: float32[2d]')
+
+    assignments = pystencils.AssignmentCollection({
+        y.center: x.interpolated_access((tx.center, 2 * ty.center))
+    })
+
+    backward_assignments = pystencils.autodiff.create_backward_assignments(assignments)
+
+    print("backward_assignments: " + str(backward_assignments))

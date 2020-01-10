@@ -121,7 +121,8 @@ def resample(input_field, output_field, interpolation_mode='linear'):
 def translate(input_field: pystencils.Field,
               output_field: pystencils.Field,
               translation,
-              interpolation_mode='linear'):
+              interpolation_mode='linear',
+              allow_spatial_derivatives=True):
 
     def create_autodiff(self, constant_fields=None, **kwargs):
         backward_assignments = translate(AdjointField(output_field), AdjointField(input_field), -translation)
@@ -136,7 +137,9 @@ def translate(input_field: pystencils.Field,
             output_field.center: input_field.interpolated_access(
                 input_field.physical_to_index(output_field.physical_coordinates - translation), interpolation_mode)
         })
-    assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
+
+    if not allow_spatial_derivatives:
+        assignments._create_autodiff = types.MethodType(create_autodiff, assignments)
     return assignments
 
 
