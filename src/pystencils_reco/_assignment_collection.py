@@ -8,7 +8,6 @@
 
 """
 
-import types
 from enum import Enum
 from functools import partial
 from itertools import chain
