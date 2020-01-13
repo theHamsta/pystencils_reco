@@ -92,8 +92,9 @@ def test_polar_transform2():
 
     class PolarTransform(sympy.Function):
         def eval(args):
-            return sympy.Matrix(
-                (args.norm(), sympy.atan2(args[1] - x.shape[1] / 2, args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
+            return sympy.Matrix((args.norm(),
+                                 sympy.atan2(args[1] - x.shape[1] / 2,
+                                             args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
 
     x.set_coordinate_origin_to_field_center()
     y.coordinate_transform = PolarTransform
@@ -264,3 +265,26 @@ def test_spatial_derivative():
     backward_assignments = pystencils.autodiff.create_backward_assignments(assignments)
 
     print("backward_assignments: " + str(backward_assignments))
+
+
+def test_get_shift():
+    from pystencils_autodiff.framework_integration.datahandling import PyTorchDataHandling
+
+    lenna_file = join(dirname(__file__), "test_data", "lenna.png")
+    lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
+
+    dh = PyTorchDataHandling(lenna.shape)
+    x, y, tx, ty = dh.add_arrays('x, y, tx, ty')
+
+    dh.cpu_arrays['x'] = lenna
+    dh.cpu_arrays['tx'][...] = 0.7
+    dh.cpu_arrays['ty'][...] = -0.7
+    dh.all_to_gpu()
+
+    kernel = pystencils_reco.AssignmentCollection({
+        y.center: x.interpolated_access((tx.center + pystencils.x_, 2 * ty.center + pystencils.y_))
+    }).create_pytorch_op()().forward
+
+    dh.run_kernel(kernel)
+
+    pyconrad.imshow(dh.gpu_arrays)
