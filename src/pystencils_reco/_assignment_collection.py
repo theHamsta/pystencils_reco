@@ -181,6 +181,9 @@ class AssignmentCollection(pystencils.AssignmentCollection):
                                 if hasattr(t, 'requires_grad') and not t.requires_grad]
         constant_fields = {f for f in self.free_fields if f.name in constant_field_names}
 
+        for n in [f for f, t in kwargs.items() if hasattr(t, 'requires_grad')]:
+            kwargs.pop(n)
+
         if not self._autodiff:
             if hasattr(self, '_create_autodiff'):
                 self._create_autodiff(constant_fields, **kwargs)
