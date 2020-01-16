@@ -119,7 +119,9 @@ def test_polar_inverted_transform():
     class PolarTransform(sympy.Function):
         def eval(args):
             return sympy.Matrix(
-                (args.norm(), sympy.atan2(args[1] - x.shape[1] / 2, args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
+                (args.norm(),
+                 sympy.atan2(args[1] - x.shape[1] / 2,
+                             args[0] - x.shape[0] / 2) / sympy.pi * x.shape[1] / 2))
 
         def inv():
             return lambda l: (sympy.Matrix((sympy.cos(l[1] * sympy.pi / x.shape[1] * 2) * l[0],
@@ -346,8 +348,8 @@ def test_get_shift_tensors(scalar_experiment):
     dh.cpu_arrays.x = lenna
 
     assignments = pystencils_reco.AssignmentCollection({
-        y.center: x.interpolated_access((tx.center + pystencils.x_, 2 * ty.center +
-                                         pystencils.y_))
+        y.center: x.interpolated_access((tx.center + pystencils.x_,
+                                         2 * ty.center + pystencils.y_))
     })
 
     print(pystencils.autodiff.create_backward_assignments(assignments))
