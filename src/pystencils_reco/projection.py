@@ -8,8 +8,6 @@
 Implements a generic forward and backprojection projections
 """
 
-import types
-
 import sympy
 
 import pystencils
@@ -17,8 +15,6 @@ import pystencils.astnodes
 import pystencils.autodiff
 import pystencils.interpolation_astnodes
 import pystencils_reco._geometry
-from pystencils.autodiff import AdjointField
-from pystencils.cache import disk_cache_no_fallback
 from pystencils_reco import crazy
 
 
