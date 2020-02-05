@@ -104,13 +104,18 @@ def forward_projection(input_volume_field: pystencils.Field,
     # tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
     tex_coord = ray_equations.subs({t: min_t_tmp}) + projection_vector * i
 
+    try:
+        intensity_weighting_sym = (input_volume_field.coordinate_transform(projection_vector)).dot(central_ray) ** 2
+    except Exception:
+        intensity_weighting_sym = (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2
+
     assignments = {
         min_t_tmp: min_t,
         max_t_tmp: max_t,
         num_steps: sympy.ceiling((max_t_tmp - min_t_tmp) / (step_size / projection_vector_norm)),
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
-        intensity_weighting: (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2,
+        intensity_weighting: intensity_weighting_sym,
         output_projections_field.center(): (line_integral * step_size * intensity_weighting)
         # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     }
