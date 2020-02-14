@@ -19,23 +19,24 @@ from pystencils_reco import crazy
 
 
 @crazy
-def forward_projection(input_volume_field: pystencils.Field,
-                       output_projections_field: pystencils.Field,
+def forward_projection(volume: pystencils.Field,
+                       projection: pystencils.Field,
                        projection_matrix,
                        step_size=1,
-                       cubic_bspline_interpolation=False):
-    # is_projection_stack = output_projections_field.spatial_dimensions == input_volume_field.spatial_dimensions
+                       cubic_bspline_interpolation=False,
+                       add_to_projector=False):
+    # is_projection_stack = projection.spatial_dimensions == volume.spatial_dimensions
 
     interpolation_mode = 'cubic_spline' if cubic_bspline_interpolation else 'linear'
-    volume_texture = pystencils.interpolation_astnodes.Interpolator(input_volume_field,
+    volume_texture = pystencils.interpolation_astnodes.Interpolator(volume,
                                                                     interpolation_mode)
-    ndim = input_volume_field.spatial_dimensions
+    ndim = volume.spatial_dimensions
     projection_matrix = pystencils_reco.ProjectiveMatrix(projection_matrix)
 
     t = pystencils_reco.typed_symbols('_parametrization', 'float32')
     texture_coordinates = sympy.Matrix(pystencils_reco.typed_symbols(f'_t:{ndim}', 'float32'))
-    u = output_projections_field.physical_coordinates_staggered
-    x = input_volume_field.index_to_physical(texture_coordinates)
+    u = projection.physical_coordinates_staggered
+    x = volume.index_to_physical(texture_coordinates)
 
     is_perspective = projection_matrix.matrix.cols == ndim + 1
 
@@ -45,7 +46,6 @@ def forward_projection(input_volume_field: pystencils.Field,
         # this also works for perspective/cone beam projection (but may lead to instable parametrization)
         eqn = projection_matrix @ x - u
     ray_equations = sympy.solve(eqn, texture_coordinates, rational=False)
-    print('Solved')
 
     if not is_perspective:
         t = [t for t in texture_coordinates if t not in ray_equations.keys()][0]
@@ -57,16 +57,16 @@ def forward_projection(input_volume_field: pystencils.Field,
     projection_vector /= projection_vector_norm
 
     conditions = pystencils_reco._geometry.coordinate_in_field_conditions(
-        input_volume_field, ray_equations)
+        volume, ray_equations)
 
     central_ray = sympy.Matrix(
-        projection_matrix.nullspace()[0][:input_volume_field.spatial_dimensions])
+        projection_matrix.nullspace()[0][:volume.spatial_dimensions])
     central_ray /= central_ray.norm()
 
     intersection_candidates = []
     for i in range(ndim):
         solution_min = sympy.solve(ray_equations[i], t, rational=False)
-        solution_max = sympy.solve(ray_equations[i] - input_volume_field.spatial_shape[i],
+        solution_max = sympy.solve(ray_equations[i] - volume.spatial_shape[i],
                                    t,
                                    rational=False)
         intersection_candidates.extend(solution_min + solution_max)
@@ -85,7 +85,7 @@ def forward_projection(input_volume_field: pystencils.Field,
     #    # dafaq?
     #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space, {str(texture_coordinates): 1}))
     #    ray_set.add_constraint(isl.Constraint.ineq_from_names(space,
-    #                                                        # {1: -input_volume_field.shape[i],
+    #                                                        # {1: -volume.shape[i],
     # str(texture_coordinates): -1}))
     #    ray_set.add_constraint(isl.Constraint.eq_from_name(space, ray_equations[i].subs({ #TODO
 
@@ -93,7 +93,7 @@ def forward_projection(input_volume_field: pystencils.Field,
     max_t = sympy.Max(intersection_point1, intersection_point2)
     # parametrization_dim = list(ray_equations).index(t)
     # min_t = 0
-    # max_t = input_volume_field.spatial_shape[parametrization_dim]
+    # max_t = volume.spatial_shape[parametrization_dim]
 
     line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step = pystencils.data_types.typed_symbols(
         'line_integral, num_steps, min_t_tmp, max_t_tmp, intensity_weighting, step', 'float32')
@@ -105,9 +105,9 @@ def forward_projection(input_volume_field: pystencils.Field,
     tex_coord = ray_equations.subs({t: min_t_tmp}) + projection_vector * i
 
     try:
-        intensity_weighting_sym = (input_volume_field.coordinate_transform(projection_vector)).dot(central_ray) ** 2
+        intensity_weighting_sym = (volume.coordinate_transform(projection_vector)).dot(central_ray) ** 2
     except Exception:
-        intensity_weighting_sym = (input_volume_field.coordinate_transform @ projection_vector).dot(central_ray) ** 2
+        intensity_weighting_sym = (volume.coordinate_transform @ projection_vector).dot(central_ray) ** 2
 
     assignments = {
         min_t_tmp: min_t,
@@ -116,13 +116,14 @@ def forward_projection(input_volume_field: pystencils.Field,
         line_integral: sympy.Sum(volume_texture.at(tex_coord),
                                  (i, 0, num_steps)),
         intensity_weighting: intensity_weighting_sym,
-        output_projections_field.center(): (line_integral * step_size * intensity_weighting)
-        # output_projections_field.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
+        projection.center(): (line_integral * step_size * intensity_weighting) +
+        projection.center() if add_to_projector else 0
+        # projection.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     }
 
     # def create_autodiff(self, constant_fields=None):
-    # backward_assignments = backward_projection(AdjointField(output_projections_field),
-    # AdjointField(input_volume_field),
+    # backward_assignments = backward_projection(AdjointField(projections),
+    # AdjointField(volume),
     # projection_matrix,
     # 1)
     # self._autodiff = pystencils.autodiff.AutoDiffOp(
