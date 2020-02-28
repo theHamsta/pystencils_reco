@@ -24,7 +24,8 @@ def forward_projection(volume: pystencils.Field,
                        projection_matrix,
                        step_size=1,
                        cubic_bspline_interpolation=False,
-                       add_to_projector=False):
+                       add_to_projector=False,
+                       central_ray_point=None):
     # is_projection_stack = projection.spatial_dimensions == volume.spatial_dimensions
 
     interpolation_mode = 'cubic_spline' if cubic_bspline_interpolation else 'linear'
@@ -59,9 +60,10 @@ def forward_projection(volume: pystencils.Field,
     conditions = pystencils_reco._geometry.coordinate_in_field_conditions(
         volume, ray_equations)
 
-    central_ray = sympy.Matrix(
-        projection_matrix.nullspace()[0][:volume.spatial_dimensions])
-    central_ray /= central_ray.norm()
+    if not central_ray_point:
+        central_ray_point = [0] * projection.spatial_dimensions
+    central_ray = projection_vector.subs({i: j for i, j in zip(
+        pystencils.x_vector(projection.spatial_dimensions), central_ray_point)})
 
     intersection_candidates = []
     for i in range(ndim):
@@ -104,10 +106,10 @@ def forward_projection(volume: pystencils.Field,
     # tex_coord = ray_equations.subs({t: min_t_tmp + i * step})
     tex_coord = ray_equations.subs({t: min_t_tmp}) + projection_vector * i
 
-    try:
-        intensity_weighting_sym = (volume.coordinate_transform(projection_vector)).dot(central_ray) ** 2
-    except Exception:
-        intensity_weighting_sym = (volume.coordinate_transform @ projection_vector).dot(central_ray) ** 2
+    if callable(volume.coordinate_transform):
+        intensity_weighting_sym = projection_vector.dot(central_ray) ** 2
+    else:
+        intensity_weighting_sym = projection_vector.dot(central_ray) ** 2
 
     assignments = {
         min_t_tmp: min_t,
@@ -117,7 +119,7 @@ def forward_projection(volume: pystencils.Field,
                                  (i, 0, num_steps)),
         intensity_weighting: intensity_weighting_sym,
         projection.center(): (line_integral * step_size * intensity_weighting) +
-        projection.center() if add_to_projector else 0
+        (projection.center() if add_to_projector else 0)
         # projection.center(): (max_t_tmp - min_t_tmp) / step # Uncomment to get path length
     }
 

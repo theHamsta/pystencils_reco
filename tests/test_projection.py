@@ -17,6 +17,7 @@ import sympy
 
 import pystencils
 import pystencils_reco
+from pystencils.data_types import create_type
 from pystencils_reco.projection import forward_projection
 
 try:
@@ -46,13 +47,12 @@ def test_genereric_projection():
     projection_matrix = pystencils_reco.matrix_symbols('T', pystencils.data_types.create_type('float32'), 3, 4)
 
     assignments = forward_projection(volume, projections, projection_matrix)
-    print(assignments)
     kernel = assignments.compile('gpu')
     pystencils.show_code(kernel)
 
 
 def test_projection_cpu():
-    volume = pystencils.fields('volume: float32[100,200,300]')
+    volume = pystencils.fields('volume: float32[3d]')
     projections = pystencils.fields('projections: float32[2D]')
 
     projection_matrix = sympy.Matrix([[-289.0098977737411, -1205.2274801832275, 0.0, 186000.0],
