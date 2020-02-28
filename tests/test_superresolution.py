@@ -16,6 +16,7 @@ import sympy
 
 import pystencils
 import pystencils_reco.transforms
+from pystencils_reco import crazy
 from pystencils_reco.filters import gauss_filter
 from pystencils_reco.resampling import (
     downsample, resample, resample_to_shape, scale_transform, translate)
@@ -37,6 +38,25 @@ def test_superresolution():
     kernel()
 
     pyconrad.show_everything()
+
+
+def test_torch_simple():
+
+    import pytest
+    pytest.importorskip("torch")
+    import torch
+
+    x, y = torch.zeros((20, 20)), torch.zeros((20, 20))
+    a = sympy.Symbol('a')
+
+    @crazy
+    def move(x, y, a):
+        return {
+            y.center: x.interpolated_access((pystencils.x_, pystencils.y_ + a))
+        }
+
+    kernel = move(x, y, a).compile()
+    pystencils.autodiff.show_code(kernel.ast)
 
 
 def test_downsample():
