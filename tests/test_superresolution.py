@@ -67,7 +67,18 @@ def test_torch_simple():
     x = torch.ones((10, 40)).cuda()
     h = torch.ones((10, 40, 8)).cuda()
 
-    kernel().forward(h, x)
+    y = kernel().forward(h, x)
+
+    # with autograd
+    x = torch.ones((10, 40), requires_grad=True).cuda()
+    h = torch.ones((10, 40, 8), requires_grad=True).cuda()
+
+    y = kernel().forward(h, x)[0]
+
+    assert y.requires_grad
+
+    loss = y.mean()
+    loss.backward()
     # kernel().forward(*([1]*9), x, y)
 
 
