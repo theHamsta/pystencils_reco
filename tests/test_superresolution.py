@@ -57,6 +57,7 @@ def test_torch_simple():
 
     kernel = move(x, y, a).compile()
     pystencils.autodiff.show_code(kernel.ast)
+    kernel().forward(x, y, 3)
 
 
 def test_downsample():
