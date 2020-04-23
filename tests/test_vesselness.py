@@ -19,7 +19,7 @@ import pytest
 import sympy
 
 from pystencils_autodiff.field_tensor_conversion import create_field_from_array_like
-from pystencils_reco.vesselness import eigenvalues_3x3
+from pystencils_reco.vesselness import eigenvalues_3d, eigenvalues_3x3
 
 pytest.importorskip('tensorflow')
 
@@ -39,6 +39,10 @@ def test_3x3(target):
     eig3 = tf.random.normal((30, 40, 50))
 
     assignments = eigenvalues_3x3(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
+    print(assignments)
+    kernel = assignments.compile(use_auto_for_assignments=True, target=target)
+    eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
+    assignments = eigenvalues_3d(eig1, eig2, eig3, xx, xy, xz, yy, yz, zz)
     print(assignments)
     kernel = assignments.compile(use_auto_for_assignments=True, target=target)
     eig1, eig2, eig3 = kernel(xx=xx, xy=xy, yy=yy, xz=xz, zz=zz, yz=yz)
@@ -237,8 +241,11 @@ def test_check_forward_pycuda():
     e2_field = to_gpu(np.ones(shape))
     e3_field = to_gpu(np.ones(shape))
 
-    assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
+    assignments = eigenvalues_3d(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
     # assignments = eigenvalues_3x3(e1_field, e2_field, e3_field, xx, xy, xz, yy, yz, zz)
     kernel = assignments.compile()
 
     kernel()
+
+
+test_3x3('cpu')

@@ -8,6 +8,7 @@
 
 """
 from os.path import dirname, join
+from time import sleep
 
 import numpy as np
 import pytest
@@ -119,17 +120,50 @@ def test_warp():
 
     lenna_file = join(dirname(__file__), "test_data", "lenna.png")
     lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
+    lenna = torch.Tensor(lenna).cuda()
 
-    warp_vectors = list(perturbation * torch.randn(lenna.shape + (2,)) for _ in range(NUM_LENNAS))
+    lr_warp_vectors = list(perturbation * torch.randn(tuple(s // 10 for s in lenna.shape) + (2,)).cuda()
+                           for _ in range(NUM_LENNAS))
 
-    warped = [torch.zeros(lenna.shape) for _ in range(NUM_LENNAS)]
+    warp_vectors = list(torch.Tensor(lenna.shape + (2,)).cuda()
+                        for _ in range(NUM_LENNAS))
+
+    scale_transform(lr_warp_vectors[0], warp_vectors[0], 10).compile()().forward(input_field=lr_warp_vectors[0],
+            output_field=warp_vectors[0])
+
+    # for i in range(len(warp_vectors)):
+    # scale(lr_warp_vectors[i], warp_vectors[i], 10)
+
+    warped = [torch.zeros(lenna.shape).cuda() for _ in range(NUM_LENNAS)]
 
     warp_kernel = translate(lenna, warped[0], pystencils.autodiff.ArrayWrapper(
-        warp_vectors[0], index_dimensions=1), interpolation_mode='linear').compile()
+        warp_vectors[0], index_dimensions=1)).compile()().forward(lenna, warped[0], warp_vectors[0])
 
-    for i in range(len(warped)):
-        warp_kernel(lenna[i], warped[i], warp_vectors[i])
+    # for i in range(len(warped)):
+    # warp_kernel(lenna[i], warped[i], warp_vectors[i])
 
+    pyconrad.imshow(warp_vectors[0][..., 1])
+    pyconrad.imshow(lr_warp_vectors[0][..., 1])
+    pyconrad.imshow(warped[0])
+    while True:
+        sleep(20)
+
+
+def test_to_polar():
+    import torch
+    NUM_LENNAS = 5
+    perturbation = 0.1
+
+    lenna_file = join(dirname(__file__), "test_data", "lenna.png")
+    lenna = skimage.io.imread(lenna_file, as_gray=True).astype(np.float32)
+
+
+    hr, lr = pystencils.fields('hr, lr: float32[2d]')
+
+    hr.set_coordinate_origin_to_field_center()
+    lr.set_coordinate_origin_to_field_center()
+
+    lr.coordinate_transform = lambda x: sympy.Matrix((x.norm(), sympy.atan2(*x) / sympy.pi * 500))
 
 def test_polar_transform():
     x, y = pystencils.fields('x, y:  float32[2d]')
